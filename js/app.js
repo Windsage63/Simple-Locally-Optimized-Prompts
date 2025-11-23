@@ -24,9 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
     modelNameInput.value = client.model;
 
     // Event Listeners
+    const chatInput = document.getElementById('chat-input');
+    const sendChatBtn = document.getElementById('send-chat-btn');
+    const chatHistoryDiv = document.getElementById('chat-history');
+    const refineBtn = document.getElementById('refine-btn');
+
+    // Initialize Settings UI
+    apiUrlInput.value = client.baseUrl;
+    modelNameInput.value = client.model;
+
+    // Event Listeners
     optimizeBtn.addEventListener('click', async () => {
         const text = promptInput.value.trim();
         if (!text) return;
+
+        // Reset chat history on new optimization
+        client.history = null;
+        chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
         setLoading(true);
         try {
@@ -38,6 +52,69 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     });
+
+    refineBtn.addEventListener('click', async () => {
+        const originalText = promptInput.value.trim();
+        const currentOutput = outputDisplay.innerText;
+        
+        if (!originalText || !currentOutput || !client.history || client.history.length === 0) {
+            alert("Please optimize a prompt and have a chat conversation first.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await client.refinePrompt(originalText, currentOutput, client.history);
+            renderOutput(result);
+        } catch (error) {
+            renderOutput(`Refinement Error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // Chat Logic
+    async function handleChat() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        appendChatMessage('user', message);
+        chatInput.value = '';
+        
+        // Auto-scroll
+        chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+        try {
+            // Show typing indicator? For now just wait.
+            const response = await client.chat(message);
+            appendChatMessage('assistant', response);
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+        } catch (error) {
+            appendChatMessage('system', `Error: ${error.message}`);
+        }
+    }
+
+    sendChatBtn.addEventListener('click', handleChat);
+    
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleChat();
+        }
+    });
+
+    function appendChatMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${role}`;
+        // Simple text escape to prevent HTML injection if needed, 
+        // but for now innerText is safer for user content.
+        // However, we might want markdown for assistant? 
+        // Let's stick to text for chat bubbles for simplicity or simple innerHTML if trusted.
+        // Using innerText for user, and maybe marked for assistant if we wanted.
+        // For now, simple text.
+        msgDiv.innerText = text;
+        chatHistoryDiv.appendChild(msgDiv);
+    }
 
     clearBtn.addEventListener('click', () => {
         promptInput.value = '';

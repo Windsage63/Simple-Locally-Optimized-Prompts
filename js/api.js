@@ -2,6 +2,7 @@ class LLMClient {
     constructor() {
         this.baseUrl = localStorage.getItem('api_url') || 'http://localhost:1234/v1';
         this.model = localStorage.getItem('model_name') || 'local-model';
+        this.history = null;
     }
 
     updateConfig(url, model) {
@@ -80,6 +81,81 @@ Instructions:
 
         } catch (error) {
             console.error('Optimization failed:', error);
+            throw error;
+        }
+    }
+
+    async chat(userMessage) {
+        if (!this.history) {
+            this.history = [
+                { role: "system", content: "You are a helpful AI assistant helping the user refine their prompt. Be concise and helpful." }
+            ];
+        }
+
+        this.history.push({ role: "user", content: userMessage });
+
+        try {
+            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.model,
+                    messages: this.history,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) throw new Error('Chat API Error');
+            const data = await response.json();
+            const assistantMessage = data.choices[0].message.content;
+            
+            this.history.push({ role: "assistant", content: assistantMessage });
+            return assistantMessage;
+        } catch (error) {
+            console.error('Chat failed:', error);
+            throw error;
+        }
+    }
+
+    async refinePrompt(originalPrompt, currentResult, chatHistory) {
+        const systemPrompt = `You are an expert Prompt Engineer. 
+Your task is to REFINE an existing optimized prompt based on the user's feedback in the chat history.
+
+Original User Idea:
+"${originalPrompt}"
+
+Current Optimized Prompt:
+${currentResult}
+
+User Feedback (Chat History):
+${chatHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
+
+Instructions:
+1. Analyze the chat history to understand what changes the user wants.
+2. Apply these changes to the "Current Optimized Prompt".
+3. Maintain the same YAML + Markdown format.
+4. Ensure the "#prompt" tag is present.
+5. Return ONLY the code block followed by the Tips section.
+`;
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        try {
+            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.model,
+                    messages: messages,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) throw new Error('Refine API Error');
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (error) {
+            console.error('Refine failed:', error);
             throw error;
         }
     }

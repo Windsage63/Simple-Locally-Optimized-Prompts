@@ -30,20 +30,44 @@
             <!-- Input Section -->
             <section class="panel input-panel">
                 <div class="panel-header">
-                    <h2><i class="fa-solid fa-pen-to-square"></i> Input Prompt</h2>
+                    <h2><i class="fa-solid fa-pen-to-square"></i> Input Idea</h2>
                     <div class="panel-actions">
                         <button id="clear-btn" class="text-btn">Clear</button>
                     </div>
                 </div>
-                <div class="editor-container">
+                
+                <!-- Top: Main Input (Reduced Height) -->
+                <div class="editor-container input-area">
                     <textarea id="prompt-input" placeholder="Enter your idea here...
 Example:
 I want a python script that creates a snake game using pygame. It should have a score counter and increase speed as you eat apples." spellcheck="false"></textarea>
                 </div>
-                <div class="panel-footer">
+
+                <!-- Middle: Action Bar -->
+                <div class="action-bar">
                     <button id="optimize-btn" class="primary-btn">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize
                     </button>
+                    <button id="refine-btn" class="secondary-btn" title="Refine based on chat">
+                        <i class="fa-solid fa-rotate-right"></i> Refine
+                    </button>
+                </div>
+
+                <!-- Bottom: Chat Interface -->
+                <div class="chat-interface">
+                    <div class="chat-header">
+                        <h3><i class="fa-regular fa-comments"></i> Refinement Chat</h3>
+                    </div>
+                    <div id="chat-history" class="chat-history">
+                        <!-- Chat messages will appear here -->
+                        <div class="chat-message system">
+                            <p>Optimize your prompt first, then chat here to refine it!</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <textarea id="chat-input" placeholder="Discuss changes..." rows="1"></textarea>
+                        <button id="send-chat-btn" class="icon-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </section>
 
