@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Optimizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="logo">
+                <i class="fa-solid fa-sparkles gradient-text"></i>
+                <span class="gradient-text">Prompt Optimizer</span>
+            </div>
+            <div class="header-controls">
+                <button id="settings-btn" class="icon-btn" title="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="editor-workspace">
+            <!-- Input Section -->
+            <section class="panel input-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-pen-to-square"></i> Input Prompt</h2>
+                    <div class="panel-actions">
+                        <button id="clear-btn" class="text-btn">Clear</button>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <textarea id="prompt-input" placeholder="Enter your idea here...
+Example:
+I want a python script that creates a snake game using pygame. It should have a score counter and increase speed as you eat apples." spellcheck="false"></textarea>
+                </div>
+                <div class="panel-footer">
+                    <button id="optimize-btn" class="primary-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize
+                    </button>
+                </div>
+            </section>
+
+            <!-- Output Section -->
+            <section class="panel output-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-robot"></i> Optimized Result</h2>
+                    <div class="panel-actions">
+                        <button id="copy-btn" class="icon-btn" title="Copy to Clipboard">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <div id="output-display" class="markdown-preview"></div>
+                    <div id="loading-overlay" class="hidden">
+                        <div class="spinner"></div>
+                        <p>Optimizing...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button id="close-settings" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="api-url">API Endpoint</label>
+                    <input type="text" id="api-url" placeholder="http://localhost:1234/v1">
+                    <small>Compatible with OpenAI-style endpoints (LM Studio, Ollama, etc.)</small>
+                </div>
+                <div class="form-group">
+                    <label for="model-name">Model Name</label>
+                    <div class="input-with-action">
+                        <input type="text" id="model-name" placeholder="local-model">
+                        <button id="fetch-models-btn" class="secondary-btn" title="Fetch available models">
+                            <i class="fa-solid fa-sync"></i>
+                        </button>
+                    </div>
+                    <!-- Dropdown for models could be dynamically populated -->
+                    <select id="model-select" class="hidden"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings" class="primary-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
