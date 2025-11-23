@@ -28,10 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendChatBtn = document.getElementById('send-chat-btn');
     const chatHistoryDiv = document.getElementById('chat-history');
     const refineBtn = document.getElementById('refine-btn');
+    const historyNav = document.getElementById('history-nav');
+    const prevResultBtn = document.getElementById('prev-result');
+    const nextResultBtn = document.getElementById('next-result');
+    const historyCounter = document.getElementById('history-counter');
 
-    // Initialize Settings UI
-    apiUrlInput.value = client.baseUrl;
-    modelNameInput.value = client.model;
+    // Result History State
+    let resultHistory = [];
+    let currentHistoryIndex = -1;
 
     // Event Listeners
     optimizeBtn.addEventListener('click', async () => {
@@ -45,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(true);
         try {
             const result = await client.optimizePrompt(text);
-            renderOutput(result);
+            addToHistory(result);
         } catch (error) {
             renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
         } finally {
@@ -65,11 +69,56 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(true);
         try {
             const result = await client.refinePrompt(originalText, currentOutput, client.history);
-            renderOutput(result);
+            addToHistory(result);
         } catch (error) {
             renderOutput(`Refinement Error: ${error.message}`);
         } finally {
             setLoading(false);
+        }
+    });
+
+    // History Navigation Logic
+    function addToHistory(result) {
+        // If we were browsing history and generate new result, truncate future history
+        if (currentHistoryIndex < resultHistory.length - 1) {
+            resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
+        }
+        
+        resultHistory.push(result);
+        currentHistoryIndex = resultHistory.length - 1;
+        updateHistoryUI();
+        renderOutput(result);
+    }
+
+    function updateHistoryUI() {
+        if (resultHistory.length > 1) {
+            historyNav.classList.remove('hidden');
+            historyCounter.textContent = `${currentHistoryIndex + 1} / ${resultHistory.length}`;
+            
+            prevResultBtn.disabled = currentHistoryIndex === 0;
+            nextResultBtn.disabled = currentHistoryIndex === resultHistory.length - 1;
+            
+            // Visual feedback for disabled state
+            prevResultBtn.style.opacity = prevResultBtn.disabled ? '0.5' : '1';
+            nextResultBtn.style.opacity = nextResultBtn.disabled ? '0.5' : '1';
+        } else {
+            historyNav.classList.add('hidden');
+        }
+    }
+
+    prevResultBtn.addEventListener('click', () => {
+        if (currentHistoryIndex > 0) {
+            currentHistoryIndex--;
+            renderOutput(resultHistory[currentHistoryIndex]);
+            updateHistoryUI();
+        }
+    });
+
+    nextResultBtn.addEventListener('click', () => {
+        if (currentHistoryIndex < resultHistory.length - 1) {
+            currentHistoryIndex++;
+            renderOutput(resultHistory[currentHistoryIndex]);
+            updateHistoryUI();
         }
     });
 
@@ -106,12 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendChatMessage(role, text) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${role}`;
-        // Simple text escape to prevent HTML injection if needed, 
-        // but for now innerText is safer for user content.
-        // However, we might want markdown for assistant? 
-        // Let's stick to text for chat bubbles for simplicity or simple innerHTML if trusted.
-        // Using innerText for user, and maybe marked for assistant if we wanted.
-        // For now, simple text.
         msgDiv.innerText = text;
         chatHistoryDiv.appendChild(msgDiv);
     }
@@ -173,10 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (models && models.length > 0) {
                 // Show select, hide text input if we have models
-                // For now, let's just populate the text input with the first one 
-                // or show a simple dropdown list in console for debugging?
-                // Better: Create options for the select and show it.
-                
                 modelSelect.innerHTML = '';
                 models.forEach(m => {
                     const option = document.createElement('option');
@@ -212,9 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             loadingOverlay.classList.remove('hidden');
             optimizeBtn.disabled = true;
+            refineBtn.disabled = true;
         } else {
             loadingOverlay.classList.add('hidden');
             optimizeBtn.disabled = false;
+            refineBtn.disabled = false;
         }
     }
 

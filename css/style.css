@@ -314,7 +314,7 @@ button {
 
 /* Chat Interface */
 .chat-interface {
-    flex: 0 0 25%; /* Fixed 25% height */
+    flex: 0 0 35%; /* Increased to 35% height */
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -390,12 +390,43 @@ button {
 
 .chat-input-area textarea {
     padding: 0.5rem;
-    height: 38px; /* Single line height */
-    min-height: 38px;
-    max-height: 100px;
+    height: 80px; /* Increased for ~3 lines */
+    min-height: 80px;
+    max-height: 150px;
     border-radius: 4px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
+}
+
+/* History Navigation */
+.history-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.25rem;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+}
+
+.nav-counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    min-width: 40px;
+    text-align: center;
+}
+
+.icon-btn.small {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.divider {
+    width: 1px;
+    height: 20px;
+    background: var(--glass-border);
+    margin: 0 0.5rem;
 }
 
 /* Loading Spinner */
