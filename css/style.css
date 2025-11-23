@@ -304,16 +304,17 @@ button {
     display: flex;
     gap: 0.75rem;
     background: rgba(0, 0, 0, 0.1);
+    justify-content: flex-end; /* Align buttons to the right */
 }
 
 .input-area {
-    flex: 0 0 25%; /* Fixed 25% height */
+    flex: 1; /* Take remaining space (approx 75%) */
     min-height: 150px;
 }
 
 /* Chat Interface */
 .chat-interface {
-    flex: 1;
+    flex: 0 0 25%; /* Fixed 25% height */
     display: flex;
     flex-direction: column;
     min-height: 0;
