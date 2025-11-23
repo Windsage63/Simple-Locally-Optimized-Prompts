@@ -119,7 +119,7 @@ Instructions:
 
     async refinePrompt(originalPrompt, currentResult, chatHistory) {
         const systemPrompt = `You are an expert Prompt Engineer. 
-Your task is to REFINE an existing optimized prompt based on the user's feedback in the chat history.
+Your task is to incrementally REFINE the Current Optimized Prompt based on the user's feedback in the chat history.
 
 Original User Idea:
 "${originalPrompt}"

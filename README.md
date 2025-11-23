@@ -1,8 +1,8 @@
-# Prompt Optimizer
+# Simple Local Optimized Prompts (SLOP)
 
 A premium, frontend-only web application designed to help you craft, refine, and version-control your LLM prompts using a **local AI server**.
 
-![Prompt Optimizer UI](screenshot.png)
+![SLOP UI](screenshot.png)
 
 ## Features
 
