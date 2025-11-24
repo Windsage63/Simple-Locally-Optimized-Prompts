@@ -101,7 +101,7 @@ Instructions:
                 role: "system",
                 content: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt.
 
-Original User Input:
+Original User Intent:
 """
 ${originalPrompt}
 """
@@ -111,7 +111,7 @@ Current Optimized Result:
 ${optimizedResult}
 """
 
-The user is chatting with you to discuss the Current Optimized Result and to evaluate and plan potential refinements to it. Be concise and helpful. Reference the original input and optimized result when relevant. Remember, that you are only planing and not making any changes to the prompt.`
+The user is chatting with you to evaluate the Current Optimized Result and plan potential refinements. Use the Original User Intent as a reference point, understanding that goals may evolve as the work progresses. Remember that you are only planning, not making any changes to the prompt.`
             };
             messages.push(systemMessage);
         } else {

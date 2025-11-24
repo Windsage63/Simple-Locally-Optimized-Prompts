@@ -312,6 +312,44 @@ button {
     min-height: 150px;
 }
 
+/* Resize Handle */
+.resize-handle {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    transition: all 0.2s;
+    position: relative;
+    user-select: none;
+}
+
+.resize-handle:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-top-color: rgba(59, 130, 246, 0.3);
+    border-bottom-color: rgba(59, 130, 246, 0.3);
+}
+
+.resize-handle:active {
+    background: rgba(59, 130, 246, 0.25);
+}
+
+.resize-handle-indicator {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.resize-handle:hover .resize-handle-indicator {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+
 /* Chat Interface */
 .chat-interface {
     flex: 0 0 35%; /* Increased to 35% height */

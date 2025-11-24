@@ -267,4 +267,89 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use marked to parse markdown
         outputDisplay.innerHTML = marked.parse(markdown);
     }
+
+    // ===== RESIZE HANDLE LOGIC =====
+    const resizeHandle = document.getElementById('resize-handle');
+    const inputPanel = document.querySelector('.input-panel');
+    const inputArea = document.querySelector('.input-area');
+    const chatInterface = document.querySelector('.chat-interface');
+    
+    // Minimum heights in pixels
+    const MIN_INPUT_HEIGHT = 280;
+    const MIN_CHAT_HEIGHT = 310;
+    
+    // Load saved chat height percentage from localStorage, default to 35%
+    const savedChatHeight = localStorage.getItem('chatHeightPercentage');
+    if (savedChatHeight) {
+        chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
+    }
+    
+    let isResizing = false;
+    let startY = 0;
+    let startChatHeight = 0;
+    
+    resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+        
+        // Get current chat height as percentage
+        const chatStyle = window.getComputedStyle(chatInterface);
+        const chatHeightPx = parseFloat(chatStyle.height);
+        const panelHeightPx = inputPanel.offsetHeight;
+        startChatHeight = (chatHeightPx / panelHeightPx) * 100;
+        
+        // Prevent text selection during drag
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const deltaY = e.clientY - startY;
+        const panelHeight = inputPanel.offsetHeight;
+        
+        // Calculate the change as a percentage of the panel height
+        const deltaPercent = (deltaY / panelHeight) * 100;
+        
+        // New chat height percentage (dragging down decreases chat, up increases chat)
+        let newChatHeightPercent = startChatHeight - deltaPercent;
+        
+        // Calculate what the input area height would be
+        const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
+        const newInputHeightPx = panelHeight - newChatHeightPx;
+        
+        // Enforce pixel-based minimum constraints
+        if (newInputHeightPx < MIN_INPUT_HEIGHT) {
+            // Input area too small, limit it
+            newChatHeightPercent = ((panelHeight - MIN_INPUT_HEIGHT) / panelHeight) * 100;
+        } else if (newChatHeightPx < MIN_CHAT_HEIGHT) {
+            // Chat area too small, limit it
+            newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
+        }
+        
+        // Clamp between reasonable bounds (at least 15% and at most 85%)
+        newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
+        
+        // Apply the new height
+        chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // Save the final chat height percentage to localStorage
+            const chatStyle = window.getComputedStyle(chatInterface);
+            const chatHeightPx = parseFloat(chatStyle.height);
+            const panelHeightPx = inputPanel.offsetHeight;
+            const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
+            
+            localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
+        }
+    });
 });
