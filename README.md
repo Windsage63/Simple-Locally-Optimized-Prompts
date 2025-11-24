@@ -8,7 +8,8 @@ A premium, frontend-only web application designed to help you craft, refine, and
 
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.). No API keys required.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
-- **Chat & Refine**: Discuss changes with the AI and incrementally refine your prompt using the built-in chat interface.
+- **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
+- **Resizable UI**: Adjust the split between the input area and chat window using the draggable resize handle, allowing you to customize your workspace layout.
 - **Result History**: Navigate through previous versions of your optimized prompt to compare results.
 - **Premium UI**: Features a modern glassmorphic design with dark mode and smooth animations.
 
@@ -49,6 +50,10 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 5.  **Browse History**:
     - Use the `<` and `>` arrows in the output header to view previous versions.
     - If you want to revert to a previous version, simply arrow to the place you want to resume, and continue to refine from there.
+
+## Data Storage & Privacy
+
+All stored information (API settings, chat history, and optimization results) is **only stored in your browser's local cache**. This data persists through page reloads for your convenience, but can easily be erased by clearing your browser's cache/site data. No information is ever sent to external servers except your local LLM endpoint.
 
 ## Troubleshooting
 
