@@ -85,14 +85,45 @@ Instructions:
         }
     }
 
-    async chat(userMessage) {
+    async chat(userMessage, originalPrompt = null, optimizedResult = null) {
         if (!this.history) {
-            this.history = [
-                { role: "system", content: "You are a helpful AI assistant helping the user refine their prompt. Be concise and helpful." }
-            ];
+            this.history = [];
         }
 
         this.history.push({ role: "user", content: userMessage });
+
+        // Build messages array for API call
+        const messages = [];
+        
+        // Add system message with context if prompts are provided
+        if (originalPrompt && optimizedResult) {
+            const systemMessage = {
+                role: "system",
+                content: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt.
+
+Original User Input:
+"""
+${originalPrompt}
+"""
+
+Current Optimized Result:
+"""
+${optimizedResult}
+"""
+
+The user is chatting with you to discuss the Current Optimized Result and to evaluate and plan potential refinements to it. Be concise and helpful. Reference the original input and optimized result when relevant. Remember, that you are only planing and not making any changes to the prompt.`
+            };
+            messages.push(systemMessage);
+        } else {
+            // Fallback system message if no context
+            messages.push({
+                role: "system",
+                content: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful."
+            });
+        }
+        
+        // Add chat history
+        messages.push(...this.history);
 
         try {
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -100,7 +131,7 @@ Instructions:
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: this.model,
-                    messages: this.history,
+                    messages: messages,
                     temperature: 0.7
                 })
             });
@@ -134,6 +165,18 @@ Instructions:
 1. Analyze the chat history to understand what changes the user wants.
 2. Apply these changes to the "Current Optimized Prompt".
 3. Maintain the same YAML + Markdown format.
+ Format:
+   \`\`\`markdown
+   ---
+   name: [Short Name]
+   description: [Concise Purpose of prompt]
+   argument-hint: [Hint for users using the prompt]
+   tags:
+     - "#prompt"
+     - [Optional other tags]
+   ---
+   "[Refined Prompt Content]"
+   \`\`\`
 4. Ensure the "#prompt" tag is present.
 5. Return ONLY the code block followed by the Tips section.
 `;

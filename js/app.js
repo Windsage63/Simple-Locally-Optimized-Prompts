@@ -134,8 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 
         try {
-            // Show typing indicator? For now just wait.
-            const response = await client.chat(message);
+            // Get context
+            const originalPrompt = promptInput.value.trim();
+            const optimizedResult = currentHistoryIndex >= 0 ? resultHistory[currentHistoryIndex] : null;
+            
+            // Call chat with context
+            const response = await client.chat(message, originalPrompt, optimizedResult);
             appendChatMessage('assistant', response);
             chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
         } catch (error) {
