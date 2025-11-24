@@ -1,6 +1,6 @@
 # Simple Local Optimized Prompts (SLOP)
 
-A premium, frontend-only web application designed to help you craft, refine, and version-control your LLM prompts using a **local AI server**.
+A premium, frontend-only web application designed to help you craft, refine, and revise your LLM prompts using a **local AI server**.
 
 ![SLOP UI](screenshot.png)
 
@@ -39,7 +39,8 @@ You need a local LLM server running that is compatible with the OpenAI API forma
     - Enter a model name (or click the refresh icon to fetch available models).
     - Click **Save**.
 3.  **Optimize a Prompt**:
-    - Type your idea in the main input box (e.g., "I want a python script for a snake game").
+    - Type your idea in the main input box (e.g., "Write a prompt to create a python script for a snake game").
+    - Or, paste an existing prompt into the main input box.
     - Click **Optimize**.
     - The structured result will appear in the right panel.
 4.  **Refine with Chat**:
@@ -47,6 +48,7 @@ You need a local LLM server running that is compatible with the OpenAI API forma
     - Click **Refine** to update the result based on the chat context.
 5.  **Browse History**:
     - Use the `<` and `>` arrows in the output header to view previous versions.
+    - If you want to revert to a previous version, simply arrow to the place you want to resume, and continue to refine from there.
 
 ## Troubleshooting
 
@@ -59,3 +61,8 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 ## License
 
 MIT
+
+## PII Safety Audit
+
+- [PII Safety Audit](PII-Safety-Audit.md)
+- Using localhost, this app does not access the internet, and does not collect any data.
