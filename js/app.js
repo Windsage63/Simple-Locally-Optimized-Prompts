@@ -1,14 +1,17 @@
 // LLMClient is now available globally via api.js
+// SessionManager is now available globally via session-manager.js
 
 document.addEventListener('DOMContentLoaded', () => {
     const client = new LLMClient();
+    const sessionManager = new SessionManager();
     
     // UI Elements
     const promptInput = document.getElementById('prompt-input');
     const outputDisplay = document.getElementById('output-display');
     const optimizeBtn = document.getElementById('optimize-btn');
-    const clearBtn = document.getElementById('clear-btn');
+    const newChatBtn = document.getElementById('new-chat-btn'); // Renamed from clear-btn
     const copyBtn = document.getElementById('copy-btn');
+    const savePromptBtn = document.getElementById('save-prompt-btn'); // New
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings');
@@ -19,11 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchModelsBtn = document.getElementById('fetch-models-btn');
     const modelSelect = document.getElementById('model-select');
 
+    // History UI Elements
+    const historyBtn = document.getElementById('history-btn');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryBtn = document.getElementById('close-history');
+    const sessionsList = document.getElementById('sessions-list');
+
     // Initialize Settings UI
     apiUrlInput.value = client.baseUrl;
     modelNameInput.value = client.model;
 
-    // Event Listeners
+    // Chat Elements
     const chatInput = document.getElementById('chat-input');
     const sendChatBtn = document.getElementById('send-chat-btn');
     const chatHistoryDiv = document.getElementById('chat-history');
@@ -33,23 +42,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextResultBtn = document.getElementById('next-result');
     const historyCounter = document.getElementById('history-counter');
 
-    // Result History State
+    // State
     let resultHistory = [];
     let currentHistoryIndex = -1;
+    let currentSession = null;
 
-    // Event Listeners
+    // --- Session Management ---
+
+    function loadCurrentSession() {
+        const sessionId = sessionManager.getCurrentSessionId();
+        if (sessionId) {
+            currentSession = sessionManager.getSession(sessionId);
+        }
+        
+        if (!currentSession) {
+            currentSession = sessionManager.createNewSession();
+        }
+
+        // Restore UI from session
+        promptInput.value = currentSession.promptInput || '';
+        client.history = currentSession.chatHistory || [];
+        resultHistory = currentSession.resultHistory || [];
+        currentHistoryIndex = currentSession.currentHistoryIndex !== undefined ? currentSession.currentHistoryIndex : -1;
+
+        // Restore Chat UI
+        chatHistoryDiv.innerHTML = '';
+        if (!client.history || client.history.length === 0) {
+            chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
+        } else {
+            client.history.forEach(msg => appendChatMessage(msg.role, msg.content, false));
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+        }
+
+        // Restore Output UI
+        if (resultHistory.length > 0 && currentHistoryIndex >= 0) {
+            renderOutput(resultHistory[currentHistoryIndex]);
+            updateHistoryUI();
+        } else {
+            outputDisplay.innerHTML = '';
+            historyNav.classList.add('hidden');
+        }
+    }
+
+    function saveState() {
+        if (!currentSession) return;
+
+        currentSession.promptInput = promptInput.value;
+        currentSession.chatHistory = client.history || [];
+        currentSession.resultHistory = resultHistory;
+        currentSession.currentHistoryIndex = currentHistoryIndex;
+
+        sessionManager.saveSession(currentSession);
+    }
+
+    // Initialize
+    loadCurrentSession();
+
+
+    // --- Event Listeners ---
+
     optimizeBtn.addEventListener('click', async () => {
         const text = promptInput.value.trim();
         if (!text) return;
 
-        // Reset chat history on new optimization
-        client.history = null;
+        // Reset chat history on new optimization? 
+        // User requested: "The history should automatically update as chat continues to keep the work safe."
+        // But usually optimization resets the context. Let's keep the behavior of resetting chat for a *fresh* optimization,
+        // but since we have "New Chat" button now, maybe this is just a re-optimization?
+        // Let's stick to the original behavior: Optimize clears chat context for the new prompt.
+        
+        client.history = [];
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
         setLoading(true);
         try {
             const result = await client.optimizePrompt(text);
             addToHistory(result);
+            saveState(); // Save after optimization
         } catch (error) {
             renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
         } finally {
@@ -70,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await client.refinePrompt(originalText, currentOutput, client.history);
             addToHistory(result);
+            saveState(); // Save after refinement
         } catch (error) {
             renderOutput(`Refinement Error: ${error.message}`);
         } finally {
@@ -111,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentHistoryIndex--;
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
+            saveState(); // Save index position
         }
     });
 
@@ -119,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentHistoryIndex++;
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
+            saveState(); // Save index position
         }
     });
 
@@ -129,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendChatMessage('user', message);
         chatInput.value = '';
+        saveState(); // Save user message immediately
         
         // Auto-scroll
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
@@ -142,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await client.chat(message, originalPrompt, optimizedResult);
             appendChatMessage('assistant', response);
             chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+            saveState(); // Save assistant response
         } catch (error) {
             appendChatMessage('system', `Error: ${error.message}`);
         }
@@ -156,16 +230,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function appendChatMessage(role, text) {
+    function appendChatMessage(role, text, save = true) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${role}`;
         msgDiv.innerText = text;
         chatHistoryDiv.appendChild(msgDiv);
     }
 
-    clearBtn.addEventListener('click', () => {
-        promptInput.value = '';
-        promptInput.focus();
+    // New Chat Button
+    newChatBtn.addEventListener('click', () => {
+        // Create new session
+        currentSession = sessionManager.createNewSession();
+        loadCurrentSession(); // Reload UI with empty session
+    });
+
+    // Save Prompt Button
+    savePromptBtn.addEventListener('click', () => {
+        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
+            alert("No prompt to save!");
+            return;
+        }
+
+        const content = resultHistory[currentHistoryIndex];
+        let filename = 'optimized-prompt.md';
+        
+        // Remove markdown code blocks if present
+        // This regex removes the opening ```markdown (or other lang) and the closing ```
+        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '');
+        cleanContent = cleanContent.trim();
+
+        // Try to parse YAML frontmatter to get the name
+        try {
+            // Match YAML block (find the first one)
+            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
+            if (match) {
+                const yamlText = match[1];
+                const data = jsyaml.load(yamlText);
+                if (data && data.name) {
+                    // Sanitize filename
+                    filename = data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse YAML for filename:", e);
+        }
+
+        // Create blob and download
+        const blob = new Blob([cleanContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 
     copyBtn.addEventListener('click', () => {
@@ -177,6 +296,89 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => copyBtn.innerHTML = originalIcon, 2000);
         }
     });
+
+    // Input auto-save
+    promptInput.addEventListener('input', () => {
+        saveState();
+    });
+
+    // --- History Modal Logic ---
+    
+    function renderSessionsList() {
+        const sessions = sessionManager.getAllSessions();
+        const list = Object.values(sessions).sort((a, b) => b.updated - a.updated);
+        
+        sessionsList.innerHTML = '';
+        
+        if (list.length === 0) {
+            sessionsList.innerHTML = '<p class="no-sessions">No saved sessions.</p>';
+            return;
+        }
+
+        list.forEach(session => {
+            const item = document.createElement('div');
+            item.className = 'session-item';
+            if (session.id === currentSession.id) {
+                item.classList.add('active');
+            }
+
+            const date = new Date(session.updated).toLocaleString();
+            
+            item.innerHTML = `
+                <div class="session-info">
+                    <div class="session-name">${session.name || 'Untitled Session'}</div>
+                    <div class="session-date">${date}</div>
+                </div>
+                <div class="session-actions">
+                    <button class="icon-btn delete-session" data-id="${session.id}" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            // Click on item to load (excluding delete button)
+            item.addEventListener('click', (e) => {
+                if (!e.target.closest('.delete-session')) {
+                    sessionManager.setCurrentSessionId(session.id);
+                    loadCurrentSession();
+                    historyModal.classList.add('hidden');
+                }
+            });
+
+            // Delete button
+            const deleteBtn = item.querySelector('.delete-session');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this session?')) {
+                    sessionManager.deleteSession(session.id);
+                    // If we deleted the current session, create a new one
+                    if (session.id === currentSession.id) {
+                        currentSession = sessionManager.createNewSession();
+                        loadCurrentSession();
+                    }
+                    renderSessionsList();
+                }
+            });
+
+            sessionsList.appendChild(item);
+        });
+    }
+
+    historyBtn.addEventListener('click', () => {
+        renderSessionsList();
+        historyModal.classList.remove('hidden');
+    });
+
+    closeHistoryBtn.addEventListener('click', () => {
+        historyModal.classList.add('hidden');
+    });
+
+    historyModal.addEventListener('click', (e) => {
+        if (e.target === historyModal) {
+            historyModal.classList.add('hidden');
+        }
+    });
+
 
     // Settings Modal Logic
     settingsBtn.addEventListener('click', () => {
