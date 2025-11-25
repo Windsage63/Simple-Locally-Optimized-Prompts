@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingOverlay = document.getElementById('loading-overlay');
     const fetchModelsBtn = document.getElementById('fetch-models-btn');
     const modelSelect = document.getElementById('model-select');
+    const apiKeyInput = document.getElementById('api-key');
+    const saveKeyCheckbox = document.getElementById('save-key');
+    const keySavedBadge = document.getElementById('key-saved-badge');
 
     // History UI Elements
     const historyBtn = document.getElementById('history-btn');
@@ -265,6 +268,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
             if (match) {
                 const yamlText = match[1];
+                
+                // Security: Basic size check before parsing to prevent DoS
+                if (yamlText.length > 50000) {
+                    console.warn("YAML frontmatter too large, skipping parse.");
+                    throw new Error("YAML too large");
+                }
+
                 const data = jsyaml.load(yamlText);
                 if (data && data.name) {
                     // Sanitize filename
@@ -385,6 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal.classList.remove('hidden');
         apiUrlInput.value = client.baseUrl;
         modelNameInput.value = client.model;
+        apiKeyInput.value = client.apiKey;
+        
+        const isSaved = !!localStorage.getItem('slop_api_key');
+        saveKeyCheckbox.checked = isSaved;
+        
+        if (isSaved) {
+            keySavedBadge.classList.remove('hidden');
+        } else {
+            keySavedBadge.classList.add('hidden');
+        }
     });
 
     closeSettingsBtn.addEventListener('click', () => {
@@ -394,9 +414,11 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettingsBtn.addEventListener('click', () => {
         const url = apiUrlInput.value.trim();
         const model = modelNameInput.value.trim();
+        const apiKey = apiKeyInput.value.trim();
+        const saveKey = saveKeyCheckbox.checked;
         
         if (url && model) {
-            client.updateConfig(url, model);
+            client.updateConfig(url, model, apiKey, saveKey);
             settingsModal.classList.add('hidden');
         }
     });
@@ -467,7 +489,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderOutput(markdown) {
         // Use marked to parse markdown
-        outputDisplay.innerHTML = marked.parse(markdown);
+        const rawHtml = marked.parse(markdown);
+        // Sanitize with DOMPurify
+        const cleanHtml = DOMPurify.sanitize(rawHtml);
+        outputDisplay.innerHTML = cleanHtml;
     }
 
     // ===== RESIZE HANDLE LOGIC =====

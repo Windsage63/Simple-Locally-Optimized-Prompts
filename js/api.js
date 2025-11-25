@@ -1,20 +1,45 @@
 class LLMClient {
     constructor() {
-        this.baseUrl = localStorage.getItem('api_url') || 'http://localhost:1234/v1';
-        this.model = localStorage.getItem('model_name') || 'local-model';
+        // Namespaced keys with fallback to old keys
+        this.baseUrl = localStorage.getItem('slop_api_url') || localStorage.getItem('api_url') || 'http://localhost:1234/v1';
+        this.model = localStorage.getItem('slop_model_name') || localStorage.getItem('model_name') || 'local-model';
+        this.apiKey = localStorage.getItem('slop_api_key') || '';
         this.history = null;
+
+        // Migration: If old keys exist and new ones don't, migrate them
+        if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
+            localStorage.setItem('slop_api_url', localStorage.getItem('api_url'));
+            localStorage.removeItem('api_url');
+        }
+        if (!localStorage.getItem('slop_model_name') && localStorage.getItem('model_name')) {
+            localStorage.setItem('slop_model_name', localStorage.getItem('model_name'));
+            localStorage.removeItem('model_name');
+        }
     }
 
-    updateConfig(url, model) {
+    updateConfig(url, model, apiKey, saveKey) {
         this.baseUrl = url;
         this.model = model;
-        localStorage.setItem('api_url', url);
-        localStorage.setItem('model_name', model);
+        this.apiKey = apiKey;
+
+        localStorage.setItem('slop_api_url', url);
+        localStorage.setItem('slop_model_name', model);
+
+        if (saveKey) {
+            localStorage.setItem('slop_api_key', apiKey);
+        } else {
+            localStorage.removeItem('slop_api_key');
+        }
     }
 
     async getModels() {
         try {
-            const response = await fetch(`${this.baseUrl}/models`);
+            const headers = {};
+            if (this.apiKey) {
+                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            }
+
+            const response = await fetch(`${this.baseUrl}/models`, { headers });
             if (!response.ok) throw new Error('Failed to fetch models');
             const data = await response.json();
             return data.data || [];
@@ -58,11 +83,16 @@ Instructions:
         ];
 
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (this.apiKey) {
+                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            }
+
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: headers,
                 body: JSON.stringify({
                     model: this.model,
                     messages: messages,
@@ -126,9 +156,14 @@ The user is chatting with you to evaluate the Current Optimized Result and plan 
         messages.push(...this.history);
 
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.apiKey) {
+                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            }
+
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     model: this.model,
                     messages: messages,
@@ -184,9 +219,14 @@ Instructions:
         const messages = [{ role: "system", content: systemPrompt }];
 
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.apiKey) {
+                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            }
+
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     model: this.model,
                     messages: messages,
