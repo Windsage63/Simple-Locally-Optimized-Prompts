@@ -9,6 +9,12 @@ class SessionManager {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    // Generate a session name from prompt input
+    _generateNameFromPrompt(promptInput) {
+        if (!promptInput) return '';
+        return promptInput.slice(0, 30) + (promptInput.length > 30 ? '...' : '');
+    }
+
     // Get all sessions metadata
     getAllSessions() {
         const sessions = localStorage.getItem(this.STORAGE_KEY);
@@ -59,11 +65,11 @@ class SessionManager {
         
         // Generate a name if it's the default one and we have input
         if (session.name === 'New Session' && session.promptInput) {
-            session.name = session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '');
-        } else if (session.promptInput && session.name !== session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '')) {
+            session.name = this._generateNameFromPrompt(session.promptInput);
+        } else if (session.promptInput && session.name !== this._generateNameFromPrompt(session.promptInput)) {
              // Update name if prompt changes, but maybe we want to be smarter about this? 
              // For now, let's keep the name synced with the first few chars of the prompt if it hasn't been manually renamed (which we don't support yet anyway)
-             session.name = session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '');
+             session.name = this._generateNameFromPrompt(session.promptInput);
         }
 
         sessions[session.id] = session;
