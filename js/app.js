@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const data = jsyaml.load(yamlText);
-                if (data && data.name) {
+                    throw new Error("YAML frontmatter exceeds maximum size of 50,000 characters");
                     // Sanitize filename
                     filename = data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
                 }
