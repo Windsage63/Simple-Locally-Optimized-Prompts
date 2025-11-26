@@ -257,9 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // This regex removes the opening ```markdown (or other lang) and the closing ```
         let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '');
         cleanContent = cleanContent.trim();
-
-        // Try to parse YAML frontmatter to get the name
-        try {
+        // Remove all markdown code blocks (triple backticks with optional language)
+        // This regex removes all code blocks, regardless of position
+        let cleanContent = content.replace(/```[\w-]*\s*\n[\s\S]*?\n?```/gm, '');
             // Match YAML block (find the first one)
             const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
             if (match) {
