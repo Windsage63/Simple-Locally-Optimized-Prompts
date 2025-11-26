@@ -21,18 +21,18 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 - **[LM Studio](https://lmstudio.ai/)** (Recommended):
   - Start the Local Server.
   - Default URL: `http://localhost:1234/v1`
-  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
+  - API Key: `None required` No API Key required on same machine. See **CORS Note** below.
   
 - **[llama.cpp](https://github.com/ggerganov/llama.cpp)**:
   - Start the server: `./server -m path/to/model.gguf --port 8080`
   - Default URL: `http://localhost:8080/v1`
-  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
+  - API Key: `None required` No API Key required on same machine. See **CORS Note** below.
   - **Model Name**: The model name entered in settings is **ignored** by the standard llama.cpp server; it will always use the model loaded at startup.
 
 - **[Ollama](https://ollama.com/)**:
   - Run `ollama serve`.
   - Default URL: `http://localhost:11434/v1`
-  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
+  - API Key: `None required` No API Key required on same machine. See **CORS Note** below.
 
 - **OpenAI-Compatible External API**:
   - Default URL: `https://api.openai.com/v1`
