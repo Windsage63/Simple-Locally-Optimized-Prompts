@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Restore Chat UI
         chatHistoryDiv.innerHTML = '';
-        if (!client.history || client.history.length === 0) {
+        if (client.history.length === 0) {
             chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
         } else {
             client.history.forEach(msg => appendChatMessage(msg.role, msg.content, false));
