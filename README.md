@@ -1,4 +1,4 @@
-# Simple Local Optimized Prompts (SLOP)
+# Simple Locally Optimized Prompts (SLOP)
 
 A premium, frontend-only web application designed to help you craft, refine, and revise your LLM prompts using a **local AI server**.
 
@@ -6,7 +6,8 @@ A premium, frontend-only web application designed to help you craft, refine, and
 
 ## Features
 
-- **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.). No API keys required.
+- **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
+- **Secure & Offline-Ready**: All libraries (Marked, JS-YAML, DOMPurify) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
 - **Resizable UI**: Adjust the split between the input area and chat window using the draggable resize handle, allowing you to customize your workspace layout.
@@ -20,25 +21,35 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 - **[LM Studio](https://lmstudio.ai/)** (Recommended):
   - Start the Local Server.
   - Default URL: `http://localhost:1234/v1`
-  - **Note**: CORS is generally required if the LLM is running on a different machine.
-
+  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
+  
 - **[llama.cpp](https://github.com/ggerganov/llama.cpp)**:
   - Start the server: `./server -m path/to/model.gguf --port 8080`
   - Default URL: `http://localhost:8080/v1`
+  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
   - **Model Name**: The model name entered in settings is **ignored** by the standard llama.cpp server; it will always use the model loaded at startup.
 
 - **[Ollama](https://ollama.com/)**:
   - Run `ollama serve`.
   - Default URL: `http://localhost:11434/v1`
+  - API Key: `null` No API Key required on same machine. See **CORS Note** below.
+
+- **OpenAI-Compatible External API**:
+  - Default URL: `https://api.openai.com/v1`
+  - API Key: Required. Use the API Key from your OpenAI account.
+  - Use the checkbox "Save Key to Local Storage" to save the API key to local storage. Unchecking removes the key from persistent storage.
 
 ## Setup & Usage
 
 1.  **Open the App**: Simply open `index.html` in your web browser. No installation or build server needed.
 2.  **Configure API**:
     - Click the **Settings (Gear)** icon in the top right.
-    - Enter your local server URL (e.g., `http://localhost:1234/v1`).
+    - Enter your local server URL (e.g., `http://localhost:1234/v1`) or an external API endpoint.
+    - Enter an API Key if required (stored securely in browser storage or session memory).
+    - **Note on API Key Storage**: Unchecking "Save Key to Local Storage" will **remove** any previously saved key from persistent storage and keep it in memory only for the current session.
     - Enter a model name (or click the refresh icon to fetch available models).
     - Click **Save**.
+    - **CORS Note**: If you connect to an LLM running on another device, ensure its server is configured to allow cross‑origin requests from your browser (CORS).
 3.  **Optimize a Prompt**:
     - Type your idea in the main input box (e.g., "Write a prompt to create a python script for a snake game").
     - Or, paste an existing prompt into the main input box.
@@ -53,7 +64,10 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 
 ## Data Storage & Privacy
 
-All stored information (API settings, chat history, and optimization results) is **only stored in your browser's local cache**. This data persists through page reloads for your convenience, but can easily be erased by clearing your browser's cache/site data. No information is ever sent to external servers except your local LLM endpoint.
+All stored information (API settings, chat history, and optimization results) is **only stored in your browser’s local storage (localStorage/sessionStorage)**. This data persists through page reloads for your convenience, but can easily be erased at any time by clearing the site data for this site in your browser's settings.
+- **API Keys**: You have full control over API key storage. Choose to save it persistently or keep it in session memory only.
+- **Key Storage**: Keys saved persistently are stored client-side in localStorage. Keys stored in localStorage are not encrypted and are accessible to scripts running in the same browser origin. Keys saved in session memory are stored only for the current browser session (in memory or sessionStorage) and are cleared when the page is reloaded or the tab is closed.
+- **No Tracking**: No information is ever sent to external servers except your configured LLM endpoint.
 
 ## Troubleshooting
 
