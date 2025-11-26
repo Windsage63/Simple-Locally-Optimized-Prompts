@@ -11,7 +11,7 @@ class SessionManager {
 
     // Generate a session name from prompt input
     _generateNameFromPrompt(promptInput) {
-        if (!promptInput) return '';
+        if (!promptInput) return 'New Session';
         return promptInput.slice(0, 30) + (promptInput.length > 30 ? '...' : '');
     }
 
