@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function appendChatMessage(role, text, save = true) {
+    function appendChatMessage(role, text) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${role}`;
         msgDiv.innerText = text;
