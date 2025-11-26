@@ -108,11 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = promptInput.value.trim();
         if (!text) return;
 
-        // Reset chat history on new optimization? 
-        // User requested: "The history should automatically update as chat continues to keep the work safe."
-        // But usually optimization resets the context. Let's keep the behavior of resetting chat for a *fresh* optimization,
-        // but since we have "New Chat" button now, maybe this is just a re-optimization?
-        // Let's stick to the original behavior: Optimize clears chat context for the new prompt.
+        // Optimize clears chat context for the new prompt to ensure each optimization starts with a fresh context, matching user expectations for prompt refinement.
         
         client.history = [];
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
