@@ -417,12 +417,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const isSaved = !!localStorage.getItem('slop_api_key');
         saveKeyCheckbox.checked = isSaved;
         
+        // Load word wrap setting
+        wordWrapCheckbox.checked = localStorage.getItem('slop_word_wrap') === 'true';
+        
         if (isSaved) {
             keySavedBadge.classList.remove('hidden');
         } else {
             keySavedBadge.classList.add('hidden');
         }
     });
+
+    // Apply word wrap setting on load
+    const wordWrapCheckbox = document.getElementById('word-wrap');
+    const savedWordWrap = localStorage.getItem('slop_word_wrap') === 'true';
+    applyWordWrap(savedWordWrap);
+
+    function applyWordWrap(enabled) {
+        if (enabled) {
+            outputDisplay.classList.add('wrap-code');
+            promptInput.classList.remove('no-wrap');
+        } else {
+            outputDisplay.classList.remove('wrap-code');
+            promptInput.classList.add('no-wrap');
+        }
+    }
 
     closeSettingsBtn.addEventListener('click', () => {
         settingsModal.classList.add('hidden');
@@ -433,9 +451,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const model = modelNameInput.value.trim();
         const apiKey = apiKeyInput.value.trim();
         const saveKey = saveKeyCheckbox.checked;
+        const wordWrap = wordWrapCheckbox.checked;
         
         if (url && model) {
             client.updateConfig(url, model, apiKey, saveKey);
+            
+            // Save word wrap setting
+            localStorage.setItem('slop_word_wrap', wordWrap);
+            applyWordWrap(wordWrap);
+            
             settingsModal.classList.add('hidden');
         }
     });

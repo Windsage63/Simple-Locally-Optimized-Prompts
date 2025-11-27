@@ -128,6 +128,11 @@ textarea::placeholder {
     color: rgba(148, 163, 184, 0.4);
 }
 
+textarea.no-wrap {
+    white-space: pre;
+    overflow-x: auto;
+}
+
 .markdown-preview {
     flex: 1;
     padding: 1rem;
@@ -150,6 +155,17 @@ textarea::placeholder {
 .markdown-preview code {
     font-family: var(--font-mono);
     color: #e2e8f0;
+}
+
+/* Word Wrap for Code Blocks */
+.markdown-preview.wrap-code pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.markdown-preview.wrap-code code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 /* Buttons */
