@@ -24,6 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('api-key');
     const saveKeyCheckbox = document.getElementById('save-key');
     const keySavedBadge = document.getElementById('key-saved-badge');
+    
+    // Prompt Settings Elements
+    const customizePromptsBtn = document.getElementById('customize-prompts-btn');
+    const promptSettingsModal = document.getElementById('prompt-settings-modal');
+    const closePromptSettingsBtn = document.getElementById('close-prompt-settings');
+    
+    const optimizePromptInput = document.getElementById('optimize-prompt-input');
+    const saveOptimizePromptBtn = document.getElementById('save-optimize-prompt');
+    const resetOptimizePromptBtn = document.getElementById('reset-optimize-prompt');
+    
+    const chatPromptInput = document.getElementById('chat-prompt-input');
+    const saveChatPromptBtn = document.getElementById('save-chat-prompt');
+    const resetChatPromptBtn = document.getElementById('reset-chat-prompt');
+    
+    const refinePromptInput = document.getElementById('refine-prompt-input');
+    const saveRefinePromptBtn = document.getElementById('save-refine-prompt');
+    const resetRefinePromptBtn = document.getElementById('reset-refine-prompt');
 
     // History UI Elements
     const historyBtn = document.getElementById('history-btn');
@@ -427,6 +444,81 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsModal.addEventListener('click', (e) => {
         if (e.target === settingsModal) {
             settingsModal.classList.add('hidden');
+        }
+    });
+
+    // --- Prompt Settings Logic ---
+
+    customizePromptsBtn.addEventListener('click', () => {
+        // Load current prompts
+        optimizePromptInput.value = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+        chatPromptInput.value = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
+        refinePromptInput.value = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+
+        settingsModal.classList.add('hidden'); // Close main settings
+        promptSettingsModal.classList.remove('hidden');
+    });
+
+    closePromptSettingsBtn.addEventListener('click', () => {
+        promptSettingsModal.classList.add('hidden');
+        settingsModal.classList.remove('hidden'); // Re-open main settings
+    });
+
+    promptSettingsModal.addEventListener('click', (e) => {
+        if (e.target === promptSettingsModal) {
+            promptSettingsModal.classList.add('hidden');
+            settingsModal.classList.remove('hidden');
+        }
+    });
+
+    // Optimize Prompt Actions
+    saveOptimizePromptBtn.addEventListener('click', () => {
+        const val = optimizePromptInput.value.trim();
+        if (val) {
+            localStorage.setItem('slop_prompt_optimize', val);
+            alert('Optimize prompt saved!');
+        }
+    });
+
+    resetOptimizePromptBtn.addEventListener('click', () => {
+        if (confirm('Reset optimize prompt to default?')) {
+            const defaultVal = LLMClient.DEFAULT_PROMPTS.optimize;
+            optimizePromptInput.value = defaultVal;
+            localStorage.setItem('slop_prompt_optimize', defaultVal);
+        }
+    });
+
+    // Chat Prompt Actions
+    saveChatPromptBtn.addEventListener('click', () => {
+        const val = chatPromptInput.value.trim();
+        if (val) {
+            localStorage.setItem('slop_prompt_chat', val);
+            alert('Chat prompt saved!');
+        }
+    });
+
+    resetChatPromptBtn.addEventListener('click', () => {
+        if (confirm('Reset chat prompt to default?')) {
+            const defaultVal = LLMClient.DEFAULT_PROMPTS.chat;
+            chatPromptInput.value = defaultVal;
+            localStorage.setItem('slop_prompt_chat', defaultVal);
+        }
+    });
+
+    // Refine Prompt Actions
+    saveRefinePromptBtn.addEventListener('click', () => {
+        const val = refinePromptInput.value.trim();
+        if (val) {
+            localStorage.setItem('slop_prompt_refine', val);
+            alert('Refine prompt saved!');
+        }
+    });
+
+    resetRefinePromptBtn.addEventListener('click', () => {
+        if (confirm('Reset refine prompt to default?')) {
+            const defaultVal = LLMClient.DEFAULT_PROMPTS.refine;
+            refinePromptInput.value = defaultVal;
+            localStorage.setItem('slop_prompt_refine', defaultVal);
         }
     });
 

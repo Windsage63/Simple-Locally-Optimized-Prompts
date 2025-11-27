@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Localy Optimized Prompts</title>
-    <title>Simple Localy Optimized Prompts</title>
+    <title>Simple Locally Optimized Prompts</title>
     <link rel="stylesheet" href="css/google-fonts.css">
     <link rel="stylesheet" href="css/fontawesome.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -15,7 +14,7 @@
         <header class="glass-header">
             <div class="logo">
                 <i class="fa-solid fa-sparkles gradient-text"></i>
-                <span class="gradient-text">Simple Localy Optimized Prompts</span>
+                <span class="gradient-text">Simple Locally Optimized Prompts</span>
             </div>
             <div class="header-controls">
                 <button id="history-btn" class="icon-btn" title="History">
@@ -143,6 +142,12 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                     <!-- Dropdown for models could be dynamically populated -->
                     <select id="model-select" class="hidden"></select>
                 </div>
+                <div class="form-group">
+                    <label>System Prompts</label>
+                    <button id="customize-prompts-btn" class="secondary-btn" style="width: 100%;">
+                        <i class="fa-solid fa-sliders"></i> Customize System Prompts
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button id="save-settings" class="primary-btn">Save</button>
@@ -160,6 +165,52 @@ I want the best prompt ever written." spellcheck="false"></textarea>
             <div class="modal-body">
                 <div id="sessions-list" class="sessions-list">
                     <!-- Sessions will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Settings Modal -->
+    <div id="prompt-settings-modal" class="modal hidden">
+        <div class="modal-content glass-panel" style="max-width: 800px; width: 90%;">
+            <div class="modal-header">
+                <h3>Customize System Prompts</h3>
+                <button id="close-prompt-settings" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="prompt-editor-section">
+                    <div class="section-header">
+                        <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Optimize Prompt</h4>
+                        <div class="section-actions">
+                            <button id="reset-optimize-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="save-optimize-prompt" class="primary-btn small">Save</button>
+                        </div>
+                    </div>
+                    <textarea id="optimize-prompt-input" rows="10" spellcheck="false"></textarea>
+                </div>
+
+                <div class="prompt-editor-section">
+                    <div class="section-header">
+                        <h4><i class="fa-regular fa-comments"></i> Chat Prompt</h4>
+                        <div class="section-actions">
+                            <button id="reset-chat-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="save-chat-prompt" class="primary-btn small">Save</button>
+                        </div>
+                    </div>
+                    <p class="hint-text">Variables: {{originalPrompt}}, {{optimizedResult}}</p>
+                    <textarea id="chat-prompt-input" rows="10" spellcheck="false"></textarea>
+                </div>
+
+                <div class="prompt-editor-section">
+                    <div class="section-header">
+                        <h4><i class="fa-solid fa-rotate-right"></i> Refine Prompt</h4>
+                        <div class="section-actions">
+                            <button id="reset-refine-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="save-refine-prompt" class="primary-btn small">Save</button>
+                        </div>
+                    </div>
+                    <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}, {{chatHistory}}</p>
+                    <textarea id="refine-prompt-input" rows="10" spellcheck="false"></textarea>
                 </div>
             </div>
         </div>
