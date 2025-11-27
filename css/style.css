@@ -527,3 +527,60 @@ button {
     border: 1px solid rgba(16, 185, 129, 0.3);
     vertical-align: middle;
 }
+
+/* Prompt Settings Modal Styles */
+.prompt-editor-section {
+    margin-bottom: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.prompt-editor-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h4 {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.hint-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.prompt-editor-section textarea {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    min-height: 150px;
+}
+
+.prompt-editor-section textarea:focus {
+    border-color: var(--primary-color);
+}

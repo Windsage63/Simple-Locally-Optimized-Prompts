@@ -49,8 +49,8 @@ class LLMClient {
         }
     }
 
-    async optimizePrompt(userPrompt) {
-        const systemPrompt = `You are an expert Prompt Engineer and LLM Optimizer. 
+    static DEFAULT_PROMPTS = {
+        optimize: `You are an expert Prompt Engineer and LLM Optimizer. 
 Your task is to take a raw prompt input, analyze it, and rewrite it to be highly effective, clear, and robust.
 The input will be freeform writing, but your output must be in markdown and YAML format.
 
@@ -75,7 +75,56 @@ Instructions:
     - 2-3 specific questions to clarify the user's intent.
     - 1-2 tips to make the prompt even better (e.g. "Try adding examples...").
 6. Do NOT add any other conversational text. Return ONLY the code block followed by the tips section.
-`;
+`,
+        chat: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt.
+
+Original User Intent:
+"""
+{{originalPrompt}}
+"""
+
+Current Optimized Result:
+"""
+{{optimizedResult}}
+"""
+
+The user is chatting with you to evaluate the Current Optimized Result and plan potential refinements. Use the Original User Intent as a reference point, understanding that goals may evolve as the work progresses. Remember that you are only planning, not making any changes to the prompt.`,
+        chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
+        refine: `You are an expert Prompt Engineer. 
+Your task is to incrementally REFINE the Current Optimized Prompt based on the user's feedback in the chat history.
+
+Original User Idea:
+"{{originalPrompt}}"
+
+Current Optimized Prompt:
+{{currentResult}}
+
+User Feedback (Chat History):
+{{chatHistory}}
+
+Instructions:
+1. Analyze the chat history to understand what changes the user wants.
+2. Apply these changes to the "Current Optimized Prompt".
+3. Maintain the same YAML + Markdown format.
+ Format:
+   \`\`\`markdown
+   ---
+   name: [Short Name]
+   description: [Concise Purpose of prompt]
+   argument-hint: [Hint for users using the prompt]
+   tags:
+     - "#prompt"
+     - [Optional other tags]
+   ---
+   "[Refined Prompt Content]"
+   \`\`\`
+4. Ensure the "#prompt" tag is present.
+5. Return ONLY the code block followed by the Tips section.
+`
+    };
+
+    async optimizePrompt(userPrompt) {
+        const systemPrompt = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
 
         const messages = [
             { role: "system", content: systemPrompt },
@@ -127,28 +176,21 @@ Instructions:
         
         // Add system message with context if prompts are provided
         if (originalPrompt && optimizedResult) {
+            let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
+            const systemContent = systemTemplate
+                .replace('{{originalPrompt}}', originalPrompt)
+                .replace('{{optimizedResult}}', optimizedResult);
+
             const systemMessage = {
                 role: "system",
-                content: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt.
-
-Original User Intent:
-"""
-${originalPrompt}
-"""
-
-Current Optimized Result:
-"""
-${optimizedResult}
-"""
-
-The user is chatting with you to evaluate the Current Optimized Result and plan potential refinements. Use the Original User Intent as a reference point, understanding that goals may evolve as the work progresses. Remember that you are only planning, not making any changes to the prompt.`
+                content: systemContent
             };
             messages.push(systemMessage);
         } else {
             // Fallback system message if no context
             messages.push({
                 role: "system",
-                content: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful."
+                content: LLMClient.DEFAULT_PROMPTS.chat_fallback
             });
         }
         
@@ -184,37 +226,14 @@ The user is chatting with you to evaluate the Current Optimized Result and plan 
     }
 
     async refinePrompt(originalPrompt, currentResult, chatHistory) {
-        const systemPrompt = `You are an expert Prompt Engineer. 
-Your task is to incrementally REFINE the Current Optimized Prompt based on the user's feedback in the chat history.
-
-Original User Idea:
-"${originalPrompt}"
-
-Current Optimized Prompt:
-${currentResult}
-
-User Feedback (Chat History):
-${chatHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
-
-Instructions:
-1. Analyze the chat history to understand what changes the user wants.
-2. Apply these changes to the "Current Optimized Prompt".
-3. Maintain the same YAML + Markdown format.
- Format:
-   \`\`\`markdown
-   ---
-   name: [Short Name]
-   description: [Concise Purpose of prompt]
-   argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
-   ---
-   "[Refined Prompt Content]"
-   \`\`\`
-4. Ensure the "#prompt" tag is present.
-5. Return ONLY the code block followed by the Tips section.
-`;
+        let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+        
+        const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+        
+        const systemPrompt = systemTemplate
+            .replace('{{originalPrompt}}', originalPrompt)
+            .replace('{{currentResult}}', currentResult)
+            .replace('{{chatHistory}}', chatHistoryString);
 
         const messages = [{ role: "system", content: systemPrompt }];
 

@@ -10,8 +10,11 @@ A premium, frontend-only web application designed to help you craft, refine, and
 - **Secure & Offline-Ready**: All libraries (Marked, JS-YAML, DOMPurify) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
+- **Session Management**: Save and restore multiple prompt engineering sessions to keep your work organized.
+- **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, and refinement.
 - **Resizable UI**: Adjust the split between the input area and chat window using the draggable resize handle, allowing you to customize your workspace layout.
 - **Result History**: Navigate through previous versions of your optimized prompt to compare results.
+- **Intelligent Saving**: Downloads your prompt as a Markdown file with a meaningful filename derived automatically from the prompt's name.
 - **Premium UI**: Features a modern glassmorphic design with dark mode and smooth animations.
 
 ## Prerequisites
@@ -61,6 +64,13 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 5.  **Browse History**:
     - Use the `<` and `>` arrows in the output header to view previous versions.
     - If you want to revert to a previous version, simply arrow to the place you want to resume, and continue to refine from there.
+6.  **Manage Sessions**:
+    - Click the **History (Clock)** icon in the header to view saved sessions.
+    - Switch between sessions or delete old ones to keep your workspace organized.
+7.  **Customize AI Behavior**:
+    - In the **Settings** menu, click **Customize System Prompts**.
+    - Modify the instructions for Optimization, Chat, and Refinement to tailor the AI's persona and output style.
+    - A reset button is available to restore the default system prompts.
 
 ## Data Storage & Privacy
 
