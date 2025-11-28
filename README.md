@@ -1,10 +1,10 @@
-# Simple Locally Optimized Prompts (SLOP)
+# Simple Locally Optimized Prompts (SLOP) 🧲
 
 A premium, frontend-only web application designed to help you craft, refine, and revise your LLM prompts using a **local AI server**.
 
 ![SLOP UI](screenshot.png)
 
-## Features
+## ✨ Features
 
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
 - **Secure & Offline-Ready**: All libraries (Marked, JS-YAML, DOMPurify) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
@@ -17,7 +17,7 @@ A premium, frontend-only web application designed to help you craft, refine, and
 - **Intelligent Saving**: Downloads your prompt as a Markdown file with a meaningful filename derived automatically from the prompt's name.
 - **Premium UI**: Features a modern glassmorphic design with dark mode and smooth animations.
 
-## Prerequisites
+## 🛠️ Prerequisites
 
 You need a local LLM server running that is compatible with the OpenAI API format.
 
@@ -42,7 +42,7 @@ You need a local LLM server running that is compatible with the OpenAI API forma
   - API Key: Required. Use the API Key from your OpenAI account.
   - Use the checkbox "Save Key to Local Storage" to save the API key to local storage. Unchecking removes the key from persistent storage.
 
-## Setup & Usage
+## 🚀 Setup & Usage
 
 1.  **Open the App**: Simply open `index.html` in your web browser. No installation or build server needed.
 2.  **Configure API**:
@@ -72,14 +72,14 @@ You need a local LLM server running that is compatible with the OpenAI API forma
     - Modify the instructions for Optimization, Chat, and Refinement to tailor the AI's persona and output style.
     - A reset button is available to restore the default system prompts.
 
-## Data Storage & Privacy
+## 🔒 Data Storage & Privacy
 
 All stored information (API settings, chat history, and optimization results) is **only stored in your browser’s local storage (localStorage/sessionStorage)**. This data persists through page reloads for your convenience, but can easily be erased at any time by clearing the site data for this site in your browser's settings.
 - **API Keys**: You have full control over API key storage. Choose to save it persistently or keep it in session memory only.
 - **Key Storage**: Keys saved persistently are stored client-side in localStorage. Keys stored in localStorage are not encrypted and are accessible to scripts running in the same browser origin. Keys saved in session memory are stored only for the current browser session (in memory or sessionStorage) and are cleared when the page is reloaded or the tab is closed.
 - **No Tracking**: No information is ever sent to external servers except your configured LLM endpoint.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 - **"API Error" or No Response**:
   - Ensure your local server is running.
@@ -87,11 +87,11 @@ All stored information (API settings, chat history, and optimization results) is
 - **Settings Button Not Working**:
   - Refresh the page. Ensure JavaScript is enabled.
 
-## License
+## 📃 License
 
 MIT
 
-## PII Safety Audit
+## 🛡️ PII Safety Audit
 
 - [PII Safety Audit](PII-Safety-Audit.md)
 - Using localhost, this app does not access the internet, and does not collect any data.

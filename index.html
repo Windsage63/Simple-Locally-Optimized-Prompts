@@ -41,7 +41,7 @@
                 <div class="editor-container input-area">
                     <textarea id="prompt-input" placeholder="Enter your idea here...
 Example:
-I want the best prompt ever written." spellcheck="false"></textarea>
+I want the best prompt ever written." spellcheck="true"></textarea>
                 </div>
 
                 <!-- Middle: Action Bar -->
@@ -119,12 +119,12 @@ I want the best prompt ever written." spellcheck="false"></textarea>
             <div class="modal-body">
                 <div class="form-group">
                     <label for="api-url">API Endpoint</label>
-                    <input type="text" id="api-url" placeholder="http://localhost:1234/v1">
+                    <input type="text" id="api-url" placeholder="http://localhost:1234/v1" spellcheck="false">
                     <small>Compatible with OpenAI-style endpoints (LM Studio, Ollama, etc.)</small>
                 </div>
                 <div class="form-group">
                     <label for="api-key">API Key <span id="key-saved-badge" class="badge hidden" title="Key saved locally"><i class="fa-solid fa-lock"></i> Saved</span></label>
-                    <input type="password" id="api-key" placeholder="sk-..." autocomplete="off">
+                    <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" spellcheck="false">
                     <small>Leave empty if not required or using env variables.</small>
                 </div>
                 <div class="form-group checkbox-group">
@@ -138,7 +138,7 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                 <div class="form-group">
                     <label for="model-name">Model Name</label>
                     <div class="input-with-action">
-                        <input type="text" id="model-name" placeholder="local-model">
+                        <input type="text" id="model-name" placeholder="local-model" spellcheck="false">
                         <button id="fetch-models-btn" class="secondary-btn" title="Fetch available models">
                             <i class="fa-solid fa-sync"></i>
                         </button>
@@ -190,7 +190,7 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                             <button id="save-optimize-prompt" class="primary-btn small">Save</button>
                         </div>
                     </div>
-                    <textarea id="optimize-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="optimize-prompt-input" rows="10" spellcheck="true"></textarea>
                 </div>
 
                 <div class="prompt-editor-section">
@@ -202,7 +202,7 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{optimizedResult}}</p>
-                    <textarea id="chat-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="chat-prompt-input" rows="10" spellcheck="true"></textarea>
                 </div>
 
                 <div class="prompt-editor-section">
@@ -214,7 +214,7 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}, {{chatHistory}}</p>
-                    <textarea id="refine-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="refine-prompt-input" rows="10" spellcheck="true"></textarea>
                 </div>
             </div>
         </div>
