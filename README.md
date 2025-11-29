@@ -1,8 +1,11 @@
-# Simple Locally Optimized Prompts (SLOP) 🧲
+![](docs/img/logos/SLOP_Banner_2228x640.png)
+---
+## *A frontend-only web application to help you craft, discuss, refine, and revise your AI prompts.*
 
-A premium, frontend-only web application designed to help you craft, refine, and revise your LLM prompts using a **local AI server**.
+## 💻Main Screen ![SLOP UI](screenshot.png)
 
-![SLOP UI](screenshot.png)
+# Simple Locally Optimized Prompts (SLOP) 🧲 
+
 
 ## ✨ Features
 
