@@ -4,7 +4,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const client = new LLMClient();
     const sessionManager = new SessionManager();
-    
+
     // UI Elements
     const promptInput = document.getElementById('prompt-input');
     const outputDisplay = document.getElementById('output-display');
@@ -24,7 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('api-key');
     const saveKeyCheckbox = document.getElementById('save-key');
     const keySavedBadge = document.getElementById('key-saved-badge');
-    
+
+    // Chat API Settings Elements
+    const chatApiUrlInput = document.getElementById('chat-api-url');
+    const chatApiKeyInput = document.getElementById('chat-api-key');
+    const chatModelNameInput = document.getElementById('chat-model-name');
+    const chatModelSelect = document.getElementById('chat-model-select');
+    const chatSaveKeyCheckbox = document.getElementById('chat-save-key');
+    const chatKeySavedBadge = document.getElementById('chat-key-saved-badge');
+    const chatFetchModelsBtn = document.getElementById('chat-fetch-models-btn');
+
     // Prompt Settings Elements
     // Prompt Settings Elements
     // const customizePromptsBtn = document.getElementById('customize-prompts-btn'); // Removed
@@ -32,24 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const editRefinePromptBtn = document.getElementById('edit-refine-prompt-btn');
     const editRefineNoChatPromptBtn = document.getElementById('edit-refine-no-chat-prompt-btn');
     const editChatPromptBtn = document.getElementById('edit-chat-prompt-btn');
-    
+
     const promptSettingsModal = document.getElementById('prompt-settings-modal');
     const closePromptSettingsBtn = document.getElementById('close-prompt-settings');
-    
+
     // Sections
     const sectionOptimize = document.getElementById('section-optimize');
     const sectionRefine = document.getElementById('section-refine');
     const sectionRefineNoChat = document.getElementById('section-refine-no-chat');
     const sectionChat = document.getElementById('section-chat');
-    
+
     const optimizePromptInput = document.getElementById('optimize-prompt-input');
     const saveOptimizePromptBtn = document.getElementById('save-optimize-prompt');
     const resetOptimizePromptBtn = document.getElementById('reset-optimize-prompt');
-    
+
     const chatPromptInput = document.getElementById('chat-prompt-input');
     const saveChatPromptBtn = document.getElementById('save-chat-prompt');
     const resetChatPromptBtn = document.getElementById('reset-chat-prompt');
-    
+
     const refinePromptInput = document.getElementById('refine-prompt-input');
     const saveRefinePromptBtn = document.getElementById('save-refine-prompt');
     const resetRefinePromptBtn = document.getElementById('reset-refine-prompt');
@@ -90,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId) {
             currentSession = sessionManager.getSession(sessionId);
         }
-        
+
         if (!currentSession) {
             currentSession = sessionManager.createNewSession();
         }
@@ -146,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // But usually optimization resets the context. Let's keep the behavior of resetting chat for a *fresh* optimization,
         // but since we have "New Chat" button now, maybe this is just a re-optimization?
         // Let's stick to the original behavior: Optimize clears chat context for the new prompt.
-        
+
         client.history = [];
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
@@ -166,15 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = promptInput.value.trim();
         const currentOutput = outputDisplay.innerText;
         const includeChat = document.getElementById('include-chat').checked;
-        
+
         if (!originalText || !currentOutput) {
             alert("Please optimize a prompt first.");
             return;
         }
 
         if (includeChat && (!client.history || client.history.length === 0)) {
-             alert("No chat history to include. Please chat first or uncheck 'Include Chat'.");
-             return;
+            alert("No chat history to include. Please chat first or uncheck 'Include Chat'.");
+            return;
         }
 
         setLoading(true);
@@ -200,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentHistoryIndex < resultHistory.length - 1) {
             resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
         }
-        
+
         resultHistory.push(result);
         currentHistoryIndex = resultHistory.length - 1;
         updateHistoryUI();
@@ -211,10 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resultHistory.length > 1) {
             historyNav.classList.remove('hidden');
             historyCounter.textContent = `${currentHistoryIndex + 1} / ${resultHistory.length}`;
-            
+
             prevResultBtn.disabled = currentHistoryIndex === 0;
             nextResultBtn.disabled = currentHistoryIndex === resultHistory.length - 1;
-            
+
             // Visual feedback for disabled state
             prevResultBtn.style.opacity = prevResultBtn.disabled ? '0.5' : '1';
             nextResultBtn.style.opacity = nextResultBtn.disabled ? '0.5' : '1';
@@ -249,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appendChatMessage('user', message);
         chatInput.value = '';
         saveState(); // Save user message immediately
-        
+
         // Auto-scroll
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 
@@ -257,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Get context
             const originalPrompt = promptInput.value.trim();
             const optimizedResult = currentHistoryIndex >= 0 ? resultHistory[currentHistoryIndex] : null;
-            
+
             // Call chat with context
             const response = await client.chat(message, originalPrompt, optimizedResult);
             appendChatMessage('assistant', response);
@@ -269,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     sendChatBtn.addEventListener('click', handleChat);
-    
+
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -300,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const content = resultHistory[currentHistoryIndex];
         let filename = 'optimized-prompt.md';
-        
+
         // Remove markdown code blocks if present
         // This regex removes the opening ```markdown (or other lang) and the closing ```
         let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '');
@@ -312,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
             if (match) {
                 const yamlText = match[1];
-                
+
                 // Security: Basic size check before parsing to prevent DoS
                 if (yamlText.length > 50000) {
                     console.warn("YAML frontmatter too large, skipping parse.");
@@ -357,13 +366,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- History Modal Logic ---
-    
+
     function renderSessionsList() {
         const sessions = sessionManager.getAllSessions();
         const list = Object.values(sessions).sort((a, b) => b.updated - a.updated);
-        
+
         sessionsList.innerHTML = '';
-        
+
         if (list.length === 0) {
             sessionsList.innerHTML = '<p class="no-sessions">No saved sessions.</p>';
             return;
@@ -377,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const date = new Date(session.updated).toLocaleString();
-            
+
             item.innerHTML = `
                 <div class="session-info">
                     <div class="session-name">${session.name || 'Untitled Session'}</div>
@@ -437,21 +446,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Settings Modal Logic
     settingsBtn.addEventListener('click', () => {
         settingsModal.classList.remove('hidden');
+
+        // Populate Optimize/Refine API settings
         apiUrlInput.value = client.baseUrl;
         modelNameInput.value = client.model;
         apiKeyInput.value = client.apiKey;
-        
+
         const isSaved = !!localStorage.getItem('slop_api_key');
         saveKeyCheckbox.checked = isSaved;
-        
-        // Load word wrap setting
-        wordWrapCheckbox.checked = localStorage.getItem('slop_word_wrap') === 'true';
-        
+
         if (isSaved) {
             keySavedBadge.classList.remove('hidden');
         } else {
             keySavedBadge.classList.add('hidden');
         }
+
+        // Populate Chat API settings
+        chatApiUrlInput.value = client.chatBaseUrl;
+        chatModelNameInput.value = client.chatModel;
+        chatApiKeyInput.value = client.chatApiKey;
+
+        const isChatKeySaved = !!localStorage.getItem('slop_chat_api_key');
+        chatSaveKeyCheckbox.checked = isChatKeySaved;
+
+        if (isChatKeySaved) {
+            chatKeySavedBadge.classList.remove('hidden');
+        } else {
+            chatKeySavedBadge.classList.add('hidden');
+        }
+
+        // Load word wrap setting
+        wordWrapCheckbox.checked = localStorage.getItem('slop_word_wrap') === 'true';
     });
 
     // Apply word wrap setting on load
@@ -479,14 +504,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiKey = apiKeyInput.value.trim();
         const saveKey = saveKeyCheckbox.checked;
         const wordWrap = wordWrapCheckbox.checked;
-        
+
+        // Chat API settings
+        const chatUrl = chatApiUrlInput.value.trim();
+        const chatModel = chatModelNameInput.value.trim();
+        const chatApiKey = chatApiKeyInput.value.trim();
+        const chatSaveKey = chatSaveKeyCheckbox.checked;
+
         if (url && model) {
             client.updateConfig(url, model, apiKey, saveKey);
-            
+            client.updateChatConfig(chatUrl, chatModel, chatApiKey, chatSaveKey);
+
             // Save word wrap setting
             localStorage.setItem('slop_word_wrap', wordWrap);
             applyWordWrap(wordWrap);
-            
+
             settingsModal.classList.add('hidden');
         }
     });
@@ -610,14 +642,14 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchModelsBtn.addEventListener('click', async () => {
         const originalIcon = fetchModelsBtn.innerHTML;
         fetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        
+
         try {
             // Temporarily update client URL to fetch from the input value
             const tempClient = new LLMClient();
             tempClient.baseUrl = apiUrlInput.value.trim();
-            
+
             const models = await tempClient.getModels();
-            
+
             if (models && models.length > 0) {
                 // Show select, hide text input if we have models
                 modelSelect.innerHTML = '';
@@ -627,15 +659,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     option.textContent = m.id;
                     modelSelect.appendChild(option);
                 });
-                
+
                 modelSelect.classList.remove('hidden');
                 modelNameInput.classList.add('hidden');
-                
+
                 // When select changes, update the hidden text input (or just use select value)
                 modelSelect.addEventListener('change', () => {
                     modelNameInput.value = modelSelect.value;
                 });
-                
+
                 // Set initial value
                 modelSelect.value = models[0].id;
                 modelNameInput.value = models[0].id;
@@ -647,6 +679,54 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(error);
         } finally {
             fetchModelsBtn.innerHTML = originalIcon;
+        }
+    });
+
+    // Fetch Models Logic for Chat API
+    chatFetchModelsBtn.addEventListener('click', async () => {
+        const originalIcon = chatFetchModelsBtn.innerHTML;
+        chatFetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        try {
+            const chatUrl = chatApiUrlInput.value.trim();
+            const chatKey = chatApiKeyInput.value.trim();
+
+            if (!chatUrl) {
+                alert('Please enter a Chat API URL first.');
+                return;
+            }
+
+            const models = await client.getModelsForEndpoint(chatUrl, chatKey);
+
+            if (models && models.length > 0) {
+                // Show select, hide text input if we have models
+                chatModelSelect.innerHTML = '';
+                models.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.id;
+                    option.textContent = m.id;
+                    chatModelSelect.appendChild(option);
+                });
+
+                chatModelSelect.classList.remove('hidden');
+                chatModelNameInput.classList.add('hidden');
+
+                // When select changes, update the hidden text input
+                chatModelSelect.addEventListener('change', () => {
+                    chatModelNameInput.value = chatModelSelect.value;
+                });
+
+                // Set initial value
+                chatModelSelect.value = models[0].id;
+                chatModelNameInput.value = models[0].id;
+            } else {
+                alert('No models found or empty list returned.');
+            }
+        } catch (error) {
+            alert('Failed to fetch models. Check Chat API URL.');
+            console.error(error);
+        } finally {
+            chatFetchModelsBtn.innerHTML = originalIcon;
         }
     });
 
@@ -676,54 +756,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputPanel = document.querySelector('.input-panel');
     const inputArea = document.querySelector('.input-area');
     const chatInterface = document.querySelector('.chat-interface');
-    
+
     // Minimum heights in pixels
     const MIN_INPUT_HEIGHT = 280;
     const MIN_CHAT_HEIGHT = 310;
-    
+
     // Load saved chat height percentage from localStorage, default to 35%
     const savedChatHeight = localStorage.getItem('chatHeightPercentage');
     if (savedChatHeight) {
         chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
     }
-    
+
     let isResizing = false;
     let startY = 0;
     let startChatHeight = 0;
-    
+
     resizeHandle.addEventListener('mousedown', (e) => {
         isResizing = true;
         startY = e.clientY;
-        
+
         // Get current chat height as percentage
         const chatStyle = window.getComputedStyle(chatInterface);
         const chatHeightPx = parseFloat(chatStyle.height);
         const panelHeightPx = inputPanel.offsetHeight;
         startChatHeight = (chatHeightPx / panelHeightPx) * 100;
-        
+
         // Prevent text selection during drag
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'ns-resize';
-        
+
         e.preventDefault();
     });
-    
+
     document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
-        
+
         const deltaY = e.clientY - startY;
         const panelHeight = inputPanel.offsetHeight;
-        
+
         // Calculate the change as a percentage of the panel height
         const deltaPercent = (deltaY / panelHeight) * 100;
-        
+
         // New chat height percentage (dragging down decreases chat, up increases chat)
         let newChatHeightPercent = startChatHeight - deltaPercent;
-        
+
         // Calculate what the input area height would be
         const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
         const newInputHeightPx = panelHeight - newChatHeightPx;
-        
+
         // Enforce pixel-based minimum constraints
         if (newInputHeightPx < MIN_INPUT_HEIGHT) {
             // Input area too small, limit it
@@ -732,26 +812,26 @@ document.addEventListener('DOMContentLoaded', () => {
             // Chat area too small, limit it
             newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
         }
-        
+
         // Clamp between reasonable bounds (at least 15% and at most 85%)
         newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
-        
+
         // Apply the new height
         chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
     });
-    
+
     document.addEventListener('mouseup', () => {
         if (isResizing) {
             isResizing = false;
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
-            
+
             // Save the final chat height percentage to localStorage
             const chatStyle = window.getComputedStyle(chatInterface);
             const chatHeightPx = parseFloat(chatStyle.height);
             const panelHeightPx = inputPanel.offsetHeight;
             const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
-            
+
             localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
         }
     });

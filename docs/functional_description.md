@@ -14,7 +14,8 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 - **Input Area**: A large text area for users to enter their raw prompt ideas.
 - **New Chat / Prompt Button**: Creates a new session, clearing the current input, chat history, and results.
 - **Action Bar**:
-    - **Refine Button**: Initiates a refinement process based on the current optimized result and the chat history. Requires an initial optimization and chat conversation.
+    - **Include Chat Checkbox**: Toggle whether to include chat history during refinement. When checked, refinement uses the full chat context. When unchecked, refinement compares only the input text against the current result.
+    - **Refine Button**: Initiates a refinement process based on the current optimized result. Uses chat history if "Include Chat" is checked, otherwise uses a no-chat refinement approach.
     - **Optimize Button**: Sends the raw prompt from the Input Area to the LLM to generate an initial optimized prompt. This clears the current chat history for a fresh start.
 - **Resize Handle**: A draggable bar to adjust the vertical split between the Input Area and the Chat Interface.
 - **Chat Interface**:
@@ -32,20 +33,29 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 
 ### 4. Modals
 - **Settings Modal**:
-    - **API Endpoint**: URL for the LLM API (default: `http://localhost:1234/v1`).
-    - **API Key**: Optional key for authentication. Can be saved to local storage.
-    - **Model Name**: The model identifier to use.
-    - **Fetch Models Button**: Retrieves available models from the API.
-    - **Customize System Prompts Button**: Opens the **Prompt Settings Modal**.
+    - **Optimize / Refine API Section** (boxed):
+        - **API Endpoint**: URL for the LLM API used for optimization and refinement (default: `http://localhost:1234/v1`).
+        - **API Key**: Optional key for authentication. "Save Key" checkbox inline controls persistence.
+        - **Model Name**: The model identifier to use for optimize/refine operations.
+        - **Fetch Models Button**: Retrieves available models from the API.
+    - **Chat Assistant API Section** (boxed):
+        - **API Endpoint**: URL for the LLM API used for chat conversations (can be different from optimize/refine).
+        - **API Key**: Optional key with inline "Save Key" checkbox.
+        - **Model Name**: The model identifier for chat operations.
+        - **Fetch Models Button**: Retrieves available models from the chat API endpoint.
+        - *Note: If left empty, falls back to Optimize/Refine API settings.*
+    - **Word Wrap Checkbox**: Toggle word wrapping in the output display.
+    - **Customize System Prompts**: Buttons to edit each of the four system prompts.
     - **Save Button**: Applies the settings.
 - **History Modal**:
     - Lists saved sessions with their names (derived from the prompt) and timestamps.
     - Allows switching between sessions or deleting them.
-- **Prompt Settings Modal** (New):
-    - Allows customization of the three core system prompts:
+- **Prompt Settings Modal**:
+    - Allows customization of the four core system prompts:
         - **Optimize Prompt**: The instructions for generating the initial optimized prompt.
-        - **Chat Prompt**: The persona for the refinement chat assistant.
-        - **Refine Prompt**: The instructions for applying refinements to the prompt.
+        - **Chat Prompt**: The persona for the refinement chat assistant. Supports variables: `{{originalPrompt}}`, `{{optimizedResult}}`.
+        - **Refine Prompt**: The instructions for applying refinements with chat context. Supports variables: `{{originalPrompt}}`, `{{currentResult}}`, `{{chatHistory}}`.
+        - **Refine (No Chat) Prompt**: The instructions for applying refinements without chat context. Supports variables: `{{originalPrompt}}`, `{{currentResult}}`.
     - **Save Button**: Saves the custom prompt to local storage.
     - **Reset Button**: Reverts the prompt to the hardcoded default.
 

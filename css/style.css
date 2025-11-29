@@ -23,7 +23,7 @@ body {
     color: var(--text-main);
     height: 100vh;
     overflow: hidden;
-    background-image: 
+    background-image:
         radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 20%);
 }
@@ -80,7 +80,8 @@ body {
     overflow: hidden;
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    min-height: 0; /* Prevent flex item from overflowing parent */
+    min-height: 0;
+    /* Prevent flex item from overflowing parent */
 }
 
 .panel-header {
@@ -105,7 +106,8 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Critical for nested flex scrolling */
+    min-height: 0;
+    /* Critical for nested flex scrolling */
     overflow: hidden;
 }
 
@@ -140,7 +142,8 @@ textarea.no-wrap {
     font-family: var(--font-mono);
     font-size: 0.9rem;
     line-height: 1.6;
-    height: 100%; /* Ensure it takes full height */
+    height: 100%;
+    /* Ensure it takes full height */
 }
 
 /* Markdown Styles */
@@ -290,7 +293,8 @@ button {
     font-size: 0.9rem;
 }
 
-.form-group input, .form-group select {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 0.75rem;
     background: rgba(0, 0, 0, 0.2);
@@ -320,11 +324,13 @@ button {
     display: flex;
     gap: 0.75rem;
     background: rgba(0, 0, 0, 0.1);
-    justify-content: flex-end; /* Align buttons to the right */
+    justify-content: flex-end;
+    /* Align buttons to the right */
 }
 
 .input-area {
-    flex: 1; /* Take remaining space (approx 75%) */
+    flex: 1;
+    /* Take remaining space (approx 75%) */
     min-height: 150px;
 }
 
@@ -368,7 +374,8 @@ button {
 
 /* Chat Interface */
 .chat-interface {
-    flex: 0 0 35%; /* Increased to 35% height */
+    flex: 0 0 35%;
+    /* Increased to 35% height */
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -444,7 +451,8 @@ button {
 
 .chat-input-area textarea {
     padding: 0.5rem;
-    height: 80px; /* Increased for ~3 lines */
+    height: 80px;
+    /* Increased for ~3 lines */
     min-height: 80px;
     max-height: 150px;
     border-radius: 4px;
@@ -510,7 +518,9 @@ button {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Settings Styles */
@@ -599,4 +609,84 @@ button {
 
 .prompt-editor-section textarea:focus {
     border-color: var(--primary-color);
+}
+
+/* API Config Section Boxes */
+.api-config-section {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.api-section-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.api-config-section .form-group {
+    margin-bottom: 1rem;
+}
+
+.api-config-section .form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Label with inline checkbox */
+.label-with-checkbox {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.label-with-checkbox>label {
+    margin-bottom: 0;
+}
+
+.checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.checkbox-inline input {
+    width: auto;
+    margin: 0;
+}
+
+.checkbox-inline label {
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+/* Prompt Buttons Grid */
+.prompt-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.prompt-buttons-grid .secondary-btn {
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.secondary-btn.small {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 }

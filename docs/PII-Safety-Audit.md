@@ -1,6 +1,6 @@
 # PII & Security Audit - Complete ✓
 
-**Last Updated:** November 25, 2025  
+**Last Updated:** November 28, 2025  
 **Auditor:** AI Security Review  
 **Repository:** Simple Locally Optimized Prompts (SLOP)  
 
@@ -50,11 +50,19 @@ This comprehensive audit examined all source code, configuration, and documentat
 **Local Storage Only:**
 - All data stored exclusively in browser `localStorage` and `sessionStorage`
 - **Storage Keys (Namespaced):**
-  - `slop_api_url` - User's API endpoint
-  - `slop_model_name` - Model selection
-  - `slop_api_key` - Optional API key (user controlled)
+  - `slop_api_url` - User's API endpoint (Optimize/Refine)
+  - `slop_model_name` - Model selection (Optimize/Refine)
+  - `slop_api_key` - Optional API key (Optimize/Refine, user controlled)
+  - `slop_chat_api_url` - User's API endpoint (Chat Assistant)
+  - `slop_chat_model_name` - Model selection (Chat Assistant)
+  - `slop_chat_api_key` - Optional API key (Chat Assistant, user controlled)
   - `slop_sessions` - Session data (prompts, chat history, results)
   - `slop_current_session_id` - Active session identifier
+  - `slop_prompt_optimize` - Custom optimize system prompt
+  - `slop_prompt_chat` - Custom chat system prompt
+  - `slop_prompt_refine` - Custom refine system prompt
+  - `slop_prompt_refine_no_chat` - Custom refine (no chat) system prompt
+  - `slop_word_wrap` - UI preference
   - `chatHeightPercentage` - UI preference
 
 **No Server-Side Storage:**
@@ -68,10 +76,12 @@ This comprehensive audit examined all source code, configuration, and documentat
 **API Endpoints (User-Configured Only):**
 All `fetch()` calls target user-provided endpoints:
 
-1. **Model List**: `GET ${baseUrl}/models`
-2. **Optimization**: `POST ${baseUrl}/chat/completions`
-3. **Chat**: `POST ${baseUrl}/chat/completions`
-4. **Refinement**: `POST ${baseUrl}/chat/completions`
+1. **Model List (Optimize/Refine API)**: `GET ${baseUrl}/models`
+2. **Model List (Chat API)**: `GET ${chatBaseUrl}/models`
+3. **Optimization**: `POST ${baseUrl}/chat/completions`
+4. **Chat**: `POST ${chatUrl}/chat/completions` (uses Chat API if configured, else falls back to primary)
+5. **Refinement**: `POST ${baseUrl}/chat/completions`
+6. **Refinement (No Chat)**: `POST ${baseUrl}/chat/completions`
 
 **Network Security:**
 - ✅ No hardcoded external URLs

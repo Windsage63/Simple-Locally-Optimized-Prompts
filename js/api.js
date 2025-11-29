@@ -4,6 +4,12 @@ class LLMClient {
         this.baseUrl = localStorage.getItem('slop_api_url') || localStorage.getItem('api_url') || 'http://localhost:1234/v1';
         this.model = localStorage.getItem('slop_model_name') || localStorage.getItem('model_name') || 'local-model';
         this.apiKey = localStorage.getItem('slop_api_key') || '';
+
+        // Chat-specific config (falls back to primary config if not set)
+        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || '';
+        this.chatModel = localStorage.getItem('slop_chat_model_name') || '';
+        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || '';
+
         this.history = null;
 
         // Migration: If old keys exist and new ones don't, migrate them
@@ -32,6 +38,21 @@ class LLMClient {
         }
     }
 
+    updateChatConfig(url, model, apiKey, saveKey) {
+        this.chatBaseUrl = url;
+        this.chatModel = model;
+        this.chatApiKey = apiKey;
+
+        localStorage.setItem('slop_chat_api_url', url);
+        localStorage.setItem('slop_chat_model_name', model);
+
+        if (saveKey) {
+            localStorage.setItem('slop_chat_api_key', apiKey);
+        } else {
+            localStorage.removeItem('slop_chat_api_key');
+        }
+    }
+
     async getModels() {
         try {
             const headers = {};
@@ -40,6 +61,23 @@ class LLMClient {
             }
 
             const response = await fetch(`${this.baseUrl}/models`, { headers });
+            if (!response.ok) throw new Error('Failed to fetch models');
+            const data = await response.json();
+            return data.data || [];
+        } catch (error) {
+            console.error('Error fetching models:', error);
+            throw error;
+        }
+    }
+
+    async getModelsForEndpoint(baseUrl, apiKey) {
+        try {
+            const headers = {};
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            const response = await fetch(`${baseUrl}/models`, { headers });
             if (!response.ok) throw new Error('Failed to fetch models');
             const data = await response.json();
             return data.data || [];
@@ -260,17 +298,22 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
         // Add chat history
         messages.push(...this.history);
 
+        // Use chat-specific config with fallback to primary config
+        const chatUrl = this.chatBaseUrl || this.baseUrl;
+        const chatModel = this.chatModel || this.model;
+        const chatKey = this.chatApiKey || this.apiKey;
+
         try {
             const headers = { 'Content-Type': 'application/json' };
-            if (this.apiKey) {
-                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            if (chatKey) {
+                headers['Authorization'] = `Bearer ${chatKey}`;
             }
 
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            const response = await fetch(`${chatUrl}/chat/completions`, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
-                    model: this.model,
+                    model: chatModel,
                     messages: messages,
                     temperature: 0.7
                 })

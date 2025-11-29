@@ -6,8 +6,14 @@ Welcome to **Simple Locally Optimized Prompts (SLOP) 🧲**! This tool helps you
 
 1.  **Configure Settings**:
     *   Click the **Settings** icon ⚙️ in the top right.
-    *   Enter your **API Endpoint** (e.g., `http://localhost:1234/v1` for LM Studio).
-    *   Enter your **Model Name** or click the refresh icon to fetch available models.
+    *   **Optimize / Refine API** (Required):
+        *   Enter your **API Endpoint** (e.g., `http://localhost:1234/v1` for LM Studio).
+        *   Enter your **Model Name** or click the refresh icon to fetch available models.
+        *   Optionally enter an **API Key** and check "Save Key" to persist it.
+    *   **Chat Assistant API** (Optional):
+        *   Configure a separate endpoint and model for the chat assistant.
+        *   Useful for having one model generate prompts while another critiques them.
+        *   Leave empty to use the same settings as Optimize/Refine.
     *   Click **Save**.
 
 2.  **Create Your First Prompt**:
@@ -27,8 +33,10 @@ Often, the first result is good but not perfect. Use the chat to improve it:
     *   Tell the AI what you want to change.
         *   *Example: "Add error handling to the script."* or *"Make the tone more formal."*
 2.  **Apply Changes**:
-    *   Once you've discussed the changes, click the **Refine** button 🔄.
-    *   The AI will generate a *new* version of the prompt incorporating your feedback.
+    *   The **Include Chat** checkbox controls how refinement works:
+        *   **Checked** (default): Refinement uses the full chat discussion to inform changes.
+        *   **Unchecked**: Refinement only compares your updated input text against the current result (useful for quick iterations).
+    *   Click the **Refine** button 🔄 to generate a new version incorporating your feedback.
 3.  **Review History**:
     *   Use the arrow buttons < and > in the Output Panel to switch between different versions of your prompt.
 
@@ -40,14 +48,15 @@ Often, the first result is good but not perfect. Use the chat to improve it:
 
 ## 🛠️ Advanced: Customizing the AI
 
-You can teach the AI how to behave by customizing its system prompts, but be aware that this can have unintended consequences. No matter what happens the rest button will return the original prompts.
+You can teach the AI how to behave by customizing its system prompts, but be aware that this can have unintended consequences. No matter what happens the reset button will return the original prompts.
 
 1.  Open **Settings** ⚙️.
 2.  Click **Customize System Prompts**.
-3.  You can edit three prompts:
-    *   **Optimize Prompt**: Controls how the AI converts your raw idea into a structured prompt this first time using the optimize button.
-    *   **Chat Prompt**: Controls the personality of the chat assistant. This also controls which 
-    *   **Refine Prompt**: Controls how the AI applies changes during refinement.
+3.  You can edit four prompts:
+    *   **Optimize Prompt**: Controls how the AI converts your raw idea into a structured prompt the first time using the optimize button.
+    *   **Chat Prompt**: Controls the personality of the chat assistant that helps you evaluate and discuss your prompt.
+    *   **Refine Prompt**: Controls how the AI applies changes during refinement when chat history is included.
+    *   **Refine (No Chat) Prompt**: Controls how the AI applies changes when refining without chat context (just comparing input vs. current result).
 4.  Click **Save** to apply your changes.
 5.  Click **Reset** to revert to the default behavior.
 
