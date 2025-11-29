@@ -11,6 +11,7 @@ class LLMClient {
         this.chatApiKey = localStorage.getItem('slop_chat_api_key') || '';
 
         this.history = null;
+        this.abortController = null;
 
         // Migration: If old keys exist and new ones don't, migrate them
         if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
@@ -21,6 +22,25 @@ class LLMClient {
             localStorage.setItem('slop_model_name', localStorage.getItem('model_name'));
             localStorage.removeItem('model_name');
         }
+    }
+
+    /**
+     * Abort any in-progress streaming request
+     */
+    abort() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+    }
+
+    /**
+     * Create a new AbortController for a streaming request
+     */
+    createAbortController() {
+        this.abort(); // Cancel any existing request
+        this.abortController = new AbortController();
+        return this.abortController.signal;
     }
 
     updateConfig(url, model, apiKey, saveKey) {
@@ -400,5 +420,232 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
             console.error('Refine (No Chat) failed:', error);
             throw error;
         }
+    }
+
+    // ==================== STREAMING METHODS ====================
+
+    /**
+     * Parse SSE stream and yield content chunks
+     */
+    async *parseSSEStream(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data: ')) {
+                        const data = trimmed.slice(6);
+                        if (data === '[DONE]') return;
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices?.[0]?.delta?.content;
+                            if (content) yield content;
+                        } catch (e) {
+                            // Skip malformed JSON chunks
+                            console.warn('Failed to parse SSE chunk:', data);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+    /**
+     * Streaming version of optimizePrompt
+     * @yields {string} Content chunks as they arrive
+     */
+    async *optimizePromptStream(userPrompt) {
+        const signal = this.createAbortController();
+        const systemPrompt = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+
+        const messages = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+        ];
+
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        if (this.apiKey) {
+            headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                model: this.model,
+                messages: messages,
+                temperature: 0.7,
+                stream: true
+            }),
+            signal
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`API Error: ${response.status} - ${err}`);
+        }
+
+        yield* this.parseSSEStream(response);
+    }
+
+    /**
+     * Streaming version of chat
+     * @yields {string} Content chunks as they arrive
+     */
+    async *chatStream(userMessage, originalPrompt = null, optimizedResult = null) {
+        const signal = this.createAbortController();
+
+        if (!this.history) {
+            this.history = [];
+        }
+
+        this.history.push({ role: "user", content: userMessage });
+
+        // Build messages array for API call
+        const messages = [];
+
+        // Add system message with context if prompts are provided
+        if (originalPrompt && optimizedResult) {
+            let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
+            const systemContent = systemTemplate
+                .replace('{{originalPrompt}}', originalPrompt)
+                .replace('{{optimizedResult}}', optimizedResult);
+
+            messages.push({
+                role: "system",
+                content: systemContent
+            });
+        } else {
+            messages.push({
+                role: "system",
+                content: LLMClient.DEFAULT_PROMPTS.chat_fallback
+            });
+        }
+
+        // Add chat history
+        messages.push(...this.history);
+
+        // Use chat-specific config with fallback to primary config
+        const chatUrl = this.chatBaseUrl || this.baseUrl;
+        const chatModel = this.chatModel || this.model;
+        const chatKey = this.chatApiKey || this.apiKey;
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (chatKey) {
+            headers['Authorization'] = `Bearer ${chatKey}`;
+        }
+
+        const response = await fetch(`${chatUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                model: chatModel,
+                messages: messages,
+                temperature: 0.7,
+                stream: true
+            }),
+            signal
+        });
+
+        if (!response.ok) throw new Error('Chat API Error');
+
+        let fullResponse = '';
+        for await (const chunk of this.parseSSEStream(response)) {
+            fullResponse += chunk;
+            yield chunk;
+        }
+
+        // Add complete response to history
+        this.history.push({ role: "assistant", content: fullResponse });
+    }
+
+    /**
+     * Streaming version of refinePrompt
+     * @yields {string} Content chunks as they arrive
+     */
+    async *refinePromptStream(originalPrompt, currentResult, chatHistory) {
+        const signal = this.createAbortController();
+        let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+
+        const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+
+        const systemPrompt = systemTemplate
+            .replace('{{originalPrompt}}', originalPrompt)
+            .replace('{{currentResult}}', currentResult)
+            .replace('{{chatHistory}}', chatHistoryString);
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.apiKey) {
+            headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                model: this.model,
+                messages: messages,
+                temperature: 0.7,
+                stream: true
+            }),
+            signal
+        });
+
+        if (!response.ok) throw new Error('Refine API Error');
+
+        yield* this.parseSSEStream(response);
+    }
+
+    /**
+     * Streaming version of noChatRefinePrompt
+     * @yields {string} Content chunks as they arrive
+     */
+    async *noChatRefinePromptStream(originalPrompt, currentResult) {
+        const signal = this.createAbortController();
+        let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+
+        const systemPrompt = systemTemplate
+            .replace('{{originalPrompt}}', originalPrompt)
+            .replace('{{currentResult}}', currentResult);
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.apiKey) {
+            headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                model: this.model,
+                messages: messages,
+                temperature: 0.7,
+                stream: true
+            }),
+            signal
+        });
+
+        if (!response.ok) throw new Error('Refine (No Chat) API Error');
+
+        yield* this.parseSSEStream(response);
     }
 }

@@ -8,6 +8,7 @@ A premium, frontend-only web application designed to help you craft, refine, and
 
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
 - **Secure & Offline-Ready**: All libraries (Marked, JS-YAML, DOMPurify) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
+- **Real-Time Streaming**: See results as they generate with live streaming output. Cancel any operation mid-stream with the Stop button.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
 - **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use a powerful model for prompt generation while a different model critiques and analyzes the output.
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".

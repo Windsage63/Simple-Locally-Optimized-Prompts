@@ -91,6 +91,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let resultHistory = [];
     let currentHistoryIndex = -1;
     let currentSession = null;
+    let isStreaming = false;
+
+    // Throttled rendering for streaming output
+    let renderTimeout = null;
+    let pendingContent = '';
+
+    function scheduleRender(content) {
+        pendingContent = content;
+        if (!renderTimeout) {
+            renderTimeout = setTimeout(() => {
+                renderOutput(pendingContent);
+                renderTimeout = null;
+            }, 50); // Render at most every 50ms
+        }
+    }
+
+    function flushRender() {
+        if (renderTimeout) {
+            clearTimeout(renderTimeout);
+            renderTimeout = null;
+        }
+        if (pendingContent) {
+            renderOutput(pendingContent);
+            pendingContent = '';
+        }
+    }
 
     // --- Session Management ---
 
@@ -150,22 +176,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = promptInput.value.trim();
         if (!text) return;
 
-        // Reset chat history on new optimization? 
-        // User requested: "The history should automatically update as chat continues to keep the work safe."
-        // But usually optimization resets the context. Let's keep the behavior of resetting chat for a *fresh* optimization,
-        // but since we have "New Chat" button now, maybe this is just a re-optimization?
-        // Let's stick to the original behavior: Optimize clears chat context for the new prompt.
+        // If already streaming, abort
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
 
+        // Reset chat history on new optimization
         client.history = [];
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
-        setLoading(true);
+        setLoading(true, 'optimize');
+        outputDisplay.innerHTML = ''; // Clear output before streaming
+        let fullResult = '';
+
         try {
-            const result = await client.optimizePrompt(text);
-            addToHistory(result);
-            saveState(); // Save after optimization
+            for await (const chunk of client.optimizePromptStream(text)) {
+                fullResult += chunk;
+                scheduleRender(fullResult);
+            }
+            flushRender();
+            addToHistory(fullResult);
+            saveState();
         } catch (error) {
-            renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
+            flushRender();
+            if (error.name === 'AbortError') {
+                // User cancelled - keep partial result if any
+                if (fullResult) {
+                    addToHistory(fullResult);
+                    saveState();
+                }
+            } else {
+                renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
+            }
         } finally {
             setLoading(false);
         }
@@ -181,23 +224,43 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // If already streaming, abort
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
+
         if (includeChat && (!client.history || client.history.length === 0)) {
             alert("No chat history to include. Please chat first or uncheck 'Include Chat'.");
             return;
         }
 
-        setLoading(true);
+        setLoading(true, 'refine');
+        outputDisplay.innerHTML = ''; // Clear output before streaming
+        let fullResult = '';
+
         try {
-            let result;
-            if (includeChat) {
-                result = await client.refinePrompt(originalText, currentOutput, client.history);
-            } else {
-                result = await client.noChatRefinePrompt(originalText, currentOutput);
+            const stream = includeChat
+                ? client.refinePromptStream(originalText, currentOutput, client.history)
+                : client.noChatRefinePromptStream(originalText, currentOutput);
+
+            for await (const chunk of stream) {
+                fullResult += chunk;
+                scheduleRender(fullResult);
             }
-            addToHistory(result);
-            saveState(); // Save after refinement
+            flushRender();
+            addToHistory(fullResult);
+            saveState();
         } catch (error) {
-            renderOutput(`Refinement Error: ${error.message}`);
+            flushRender();
+            if (error.name === 'AbortError') {
+                if (fullResult) {
+                    addToHistory(fullResult);
+                    saveState();
+                }
+            } else {
+                renderOutput(`Refinement Error: ${error.message}`);
+            }
         } finally {
             setLoading(false);
         }
@@ -255,25 +318,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
+        // If already streaming chat, abort
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
+
         appendChatMessage('user', message);
         chatInput.value = '';
-        saveState(); // Save user message immediately
+        saveState();
 
         // Auto-scroll
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 
+        // Create placeholder for streaming response
+        const assistantMsgDiv = appendChatMessage('assistant', '');
+        let fullResponse = '';
+
+        sendChatBtn.disabled = true;
+        const originalIcon = sendChatBtn.innerHTML;
+        sendChatBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+        sendChatBtn.disabled = false;
+        sendChatBtn.onclick = () => client.abort();
+        isStreaming = true;
+
         try {
-            // Get context
             const originalPrompt = promptInput.value.trim();
             const optimizedResult = currentHistoryIndex >= 0 ? resultHistory[currentHistoryIndex] : null;
 
-            // Call chat with context
-            const response = await client.chat(message, originalPrompt, optimizedResult);
-            appendChatMessage('assistant', response);
-            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-            saveState(); // Save assistant response
+            for await (const chunk of client.chatStream(message, originalPrompt, optimizedResult)) {
+                fullResponse += chunk;
+                assistantMsgDiv.innerText = fullResponse;
+                chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+            }
+            saveState();
         } catch (error) {
-            appendChatMessage('system', `Error: ${error.message}`);
+            if (error.name === 'AbortError') {
+                // Keep partial response if any
+                if (!fullResponse) {
+                    assistantMsgDiv.innerText = '[Cancelled]';
+                    assistantMsgDiv.classList.add('system');
+                }
+            } else {
+                assistantMsgDiv.innerText = `Error: ${error.message}`;
+                assistantMsgDiv.classList.remove('assistant');
+                assistantMsgDiv.classList.add('system');
+            }
+        } finally {
+            isStreaming = false;
+            sendChatBtn.innerHTML = originalIcon;
+            sendChatBtn.onclick = handleChat;
         }
     }
 
@@ -291,6 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.className = `chat-message ${role}`;
         msgDiv.innerText = text;
         chatHistoryDiv.appendChild(msgDiv);
+        return msgDiv; // Return for streaming updates
     }
 
     // New Chat Button
@@ -731,14 +826,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Helpers
-    function setLoading(isLoading) {
-        if (isLoading) {
+    const optimizeBtnOriginalHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Optimize';
+    const refineBtnOriginalHTML = '<i class="fa-solid fa-rotate-right"></i> Refine';
+    const stopBtnHTML = '<i class="fa-solid fa-stop"></i> Stop';
+
+    function setLoading(loading, mode = null) {
+        isStreaming = loading;
+
+        if (loading) {
             loadingOverlay.classList.remove('hidden');
-            optimizeBtn.disabled = true;
-            refineBtn.disabled = true;
+
+            // Transform the active button to a Stop button
+            if (mode === 'optimize') {
+                optimizeBtn.innerHTML = stopBtnHTML;
+                optimizeBtn.classList.add('stop-btn');
+                refineBtn.disabled = true;
+            } else if (mode === 'refine') {
+                refineBtn.innerHTML = stopBtnHTML;
+                refineBtn.classList.add('stop-btn');
+                optimizeBtn.disabled = true;
+            } else {
+                optimizeBtn.disabled = true;
+                refineBtn.disabled = true;
+            }
         } else {
             loadingOverlay.classList.add('hidden');
+
+            // Restore buttons
+            optimizeBtn.innerHTML = optimizeBtnOriginalHTML;
+            optimizeBtn.classList.remove('stop-btn');
             optimizeBtn.disabled = false;
+
+            refineBtn.innerHTML = refineBtnOriginalHTML;
+            refineBtn.classList.remove('stop-btn');
             refineBtn.disabled = false;
         }
     }

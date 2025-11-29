@@ -195,6 +195,17 @@ button {
     transform: translateY(-1px);
 }
 
+.primary-btn.stop-btn,
+.secondary-btn.stop-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.primary-btn.stop-btn:hover,
+.secondary-btn.stop-btn:hover {
+    background: #b91c1c;
+}
+
 .icon-btn {
     background: transparent;
     color: var(--text-muted);

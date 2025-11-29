@@ -20,7 +20,8 @@ Welcome to **Simple Locally Optimized Prompts (SLOP) 🧲**! This tool helps you
     *   In the **Input Idea** box, either paste your existing prompt or type a rough description of what you want.
         *   *Example: "I want a python script to scrape a website."*
     *   Click **Optimize** ✨.
-    *   The AI will generate a structured, professional prompt in the **Optimized Result** panel.
+    *   The AI will generate a structured, professional prompt in the **Optimized Result** panel. Results stream in real-time as they are generated.
+    *   Need to stop? Click the **Stop** button (the Optimize button transforms during generation) to cancel the operation.
     * Note that all prompts are created with a frontmatter section that contains metadata about the prompt. This is useful for storing or categorizing and storing prompts systems like VS Code or Obsidian
     *   Copy the prompt with the copy button or save it with the save button and paste it into your LLM or any OpenAI-compatible API.
 
