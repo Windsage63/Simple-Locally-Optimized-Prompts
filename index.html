@@ -46,6 +46,10 @@ I want the best prompt ever written." spellcheck="true"></textarea>
 
                 <!-- Middle: Action Bar -->
                 <div class="action-bar">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="include-chat" checked>
+                        <label for="include-chat" title="Include chat history in refinement context">Include Chat</label>
+                    </div>
                     <button id="refine-btn" class="secondary-btn" title="Refine based on chat">
                         <i class="fa-solid fa-rotate-right"></i> Refine
                     </button>
@@ -147,10 +151,21 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                     <select id="model-select" class="hidden"></select>
                 </div>
                 <div class="form-group">
-                    <label>System Prompts</label>
-                    <button id="customize-prompts-btn" class="secondary-btn" style="width: 100%;">
-                        <i class="fa-solid fa-sliders"></i> Customize System Prompts
-                    </button>
+                    <label>Customize System Prompts</label>
+                    <div class="prompt-buttons-grid">
+                        <button id="edit-optimize-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize
+                        </button>
+                        <button id="edit-refine-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-rotate-right"></i> Refine
+                        </button>
+                        <button id="edit-refine-no-chat-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-eraser"></i> Refine (No Chat)
+                        </button>
+                        <button id="edit-chat-prompt-btn" class="secondary-btn small">
+                            <i class="fa-regular fa-comments"></i> Chat Assistant
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -182,7 +197,7 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                 <button id="close-prompt-settings" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div class="prompt-editor-section">
+                <div id="section-optimize" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Optimize Prompt</h4>
                         <div class="section-actions">
@@ -190,10 +205,10 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                             <button id="save-optimize-prompt" class="primary-btn small">Save</button>
                         </div>
                     </div>
-                    <textarea id="optimize-prompt-input" rows="10" spellcheck="true"></textarea>
+                    <textarea id="optimize-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
 
-                <div class="prompt-editor-section">
+                <div id="section-chat" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-regular fa-comments"></i> Chat Prompt</h4>
                         <div class="section-actions">
@@ -202,10 +217,10 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{optimizedResult}}</p>
-                    <textarea id="chat-prompt-input" rows="10" spellcheck="true"></textarea>
+                    <textarea id="chat-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
 
-                <div class="prompt-editor-section">
+                <div id="section-refine" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-solid fa-rotate-right"></i> Refine Prompt</h4>
                         <div class="section-actions">
@@ -214,7 +229,19 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}, {{chatHistory}}</p>
-                    <textarea id="refine-prompt-input" rows="10" spellcheck="true"></textarea>
+                    <textarea id="refine-prompt-input" rows="15" spellcheck="true"></textarea>
+                </div>
+
+                <div id="section-refine-no-chat" class="prompt-editor-section hidden">
+                    <div class="section-header">
+                        <h4><i class="fa-solid fa-eraser"></i> Refine Prompt (No Chat)</h4>
+                        <div class="section-actions">
+                            <button id="reset-refine-no-chat-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="save-refine-no-chat-prompt" class="primary-btn small">Save</button>
+                        </div>
+                    </div>
+                    <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}</p>
+                    <textarea id="refine-no-chat-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
             </div>
         </div>

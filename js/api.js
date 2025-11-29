@@ -50,11 +50,14 @@ class LLMClient {
     }
 
     static DEFAULT_PROMPTS = {
-        optimize: `You are an expert Prompt Engineer and LLM Optimizer. 
+        optimize: `# Objective:
+
+You are an expert Prompt Engineer and LLM Optimizer. 
 Your task is to take a raw prompt input, analyze it, and rewrite it to be highly effective, clear, and robust.
 The input will be freeform writing, but your output must be in markdown and YAML format.
 
-Instructions:
+## Instructions:
+
 1. Analyze the user's freeform request to understand their goal.
 2. Construct a professional prompt based on their request.
 3. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
@@ -68,44 +71,65 @@ Instructions:
      - "#prompt"
      - [Optional other tags]
    ---
-   "[Refined Prompt Content]"
+
+   # Instructions:
+
+   [Refined Prompt Content]
    \`\`\`
 4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag".
-5. AFTER the code block, add a section titled "## Tips & Questions" containing:
-    - 2-3 specific questions to clarify the user's intent.
-    - 1-2 tips to make the prompt even better (e.g. "Try adding examples...").
-6. Do NOT add any other conversational text. Return ONLY the code block followed by the tips section.
+5. Do NOT add any other conversational text. Return ONLY the code block.
 `,
-        chat: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt.
+        chat: `# Objective
 
-Original User Intent:
+You are a professional prompt engineer with experience in all types of LLM prompting, who is tasked with evaluating an discussing the users prompts and helping to improve them. 
+
+## Original User Intent:
+
 """
 {{originalPrompt}}
 """
 
-Current Optimized Result:
+## Current Optimized Result:
+
 """
 {{optimizedResult}}
 """
 
-The user is chatting with you to evaluate the Current Optimized Result and plan potential refinements. Use the Original User Intent as a reference point, understanding that goals may evolve as the work progresses. Remember that you are only planning, not making any changes to the prompt.`,
+## Instructions:
+
+1. Use the Original User Intent as a grounding reference point
+2. Understand that the user's goals may evolve as the chat progresses
+3. Leverage your knowledge and experience
+4. Evaluate the Current Optimized Result
+5. Avoid common prompting pitfalls
+6. Recommend 2-3 potential refinements.
+7. Remember that you are advising and not just rewriting their prompt.
+8. Chat with the user in an open and friendly manner, explaining your criticisms, recommendations, and the reasoning for each, clearly and concisely.
+`,
         chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
-        refine: `You are an expert Prompt Engineer. 
+        refine: `# Objective:
+
+You are an expert Prompt Engineer. 
 Your task is to incrementally REFINE the Current Optimized Prompt based on the user's feedback in the chat history.
 
-Original User Idea:
+## Original User Idea:
+
 "{{originalPrompt}}"
 
-Current Optimized Prompt:
+## Current Optimized Prompt:
+
 {{currentResult}}
 
-User Feedback (Chat History):
+## User Feedback (Chat History):
+
 {{chatHistory}}
 
-Instructions:
+## Instructions:
+
 1. Analyze the chat history to understand what changes the user wants.
-2. Apply these changes to the "Current Optimized Prompt".
-3. Maintain the same YAML + Markdown format.
+2. Compare the new desires and changes to the existing "Current Optimized Prompt"
+3. Construct an updated professional prompt, incorporating the new changes to incrementally incorporate these new ideas.
+4. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
  Format:
    \`\`\`markdown
    ---
@@ -116,10 +140,49 @@ Instructions:
      - "#prompt"
      - [Optional other tags]
    ---
-   "[Refined Prompt Content]"
+
+   # Instructions:
+
+   [Refined Prompt Content]
    \`\`\`
-4. Ensure the "#prompt" tag is present.
-5. Return ONLY the code block followed by the Tips section.
+5. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
+6. Do NOT add any other conversational text. Return ONLY the code block.
+`,
+        refine_no_chat: `# Objective:
+
+You are an expert Prompt Engineer. 
+Your task is to REFINE the Current Optimized Prompt based on the Updated User Idea.
+
+## Updated User Idea:
+
+"{{originalPrompt}}"
+
+## Current Optimized Prompt:
+
+{{currentResult}}
+
+## Instructions:
+
+1. Compare the Updated User Idea with the Current Optimized Prompt.
+2. Adjust the prompt to better match the new requirements in the User Idea.
+3. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
+ Format:
+   \`\`\`markdown
+   ---
+   name: [Short Name]
+   description: [Concise Purpose of prompt]
+   argument-hint: [Hint for users using the prompt]
+   tags:
+     - "#prompt"
+     - [Optional other tags]
+   ---
+
+   # Instructions:
+
+   [Refined Prompt Content]
+   \`\`\`
+4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
+5. Do NOT add any other conversational text. Return ONLY the code block.
 `
     };
 
@@ -173,7 +236,7 @@ Instructions:
 
         // Build messages array for API call
         const messages = [];
-        
+
         // Add system message with context if prompts are provided
         if (originalPrompt && optimizedResult) {
             let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
@@ -193,7 +256,7 @@ Instructions:
                 content: LLMClient.DEFAULT_PROMPTS.chat_fallback
             });
         }
-        
+
         // Add chat history
         messages.push(...this.history);
 
@@ -216,7 +279,7 @@ Instructions:
             if (!response.ok) throw new Error('Chat API Error');
             const data = await response.json();
             const assistantMessage = data.choices[0].message.content;
-            
+
             this.history.push({ role: "assistant", content: assistantMessage });
             return assistantMessage;
         } catch (error) {
@@ -227,9 +290,9 @@ Instructions:
 
     async refinePrompt(originalPrompt, currentResult, chatHistory) {
         let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
-        
+
         const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
-        
+
         const systemPrompt = systemTemplate
             .replace('{{originalPrompt}}', originalPrompt)
             .replace('{{currentResult}}', currentResult)
@@ -258,6 +321,40 @@ Instructions:
             return data.choices[0].message.content;
         } catch (error) {
             console.error('Refine failed:', error);
+            throw error;
+        }
+    }
+
+    async noChatRefinePrompt(originalPrompt, currentResult) {
+        let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+
+        const systemPrompt = systemTemplate
+            .replace('{{originalPrompt}}', originalPrompt)
+            .replace('{{currentResult}}', currentResult);
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.apiKey) {
+                headers['Authorization'] = `Bearer ${this.apiKey}`;
+            }
+
+            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    model: this.model,
+                    messages: messages,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) throw new Error('Refine (No Chat) API Error');
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (error) {
+            console.error('Refine (No Chat) failed:', error);
             throw error;
         }
     }

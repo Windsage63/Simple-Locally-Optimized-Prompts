@@ -26,9 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const keySavedBadge = document.getElementById('key-saved-badge');
     
     // Prompt Settings Elements
-    const customizePromptsBtn = document.getElementById('customize-prompts-btn');
+    // Prompt Settings Elements
+    // const customizePromptsBtn = document.getElementById('customize-prompts-btn'); // Removed
+    const editOptimizePromptBtn = document.getElementById('edit-optimize-prompt-btn');
+    const editRefinePromptBtn = document.getElementById('edit-refine-prompt-btn');
+    const editRefineNoChatPromptBtn = document.getElementById('edit-refine-no-chat-prompt-btn');
+    const editChatPromptBtn = document.getElementById('edit-chat-prompt-btn');
+    
     const promptSettingsModal = document.getElementById('prompt-settings-modal');
     const closePromptSettingsBtn = document.getElementById('close-prompt-settings');
+    
+    // Sections
+    const sectionOptimize = document.getElementById('section-optimize');
+    const sectionRefine = document.getElementById('section-refine');
+    const sectionRefineNoChat = document.getElementById('section-refine-no-chat');
+    const sectionChat = document.getElementById('section-chat');
     
     const optimizePromptInput = document.getElementById('optimize-prompt-input');
     const saveOptimizePromptBtn = document.getElementById('save-optimize-prompt');
@@ -41,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const refinePromptInput = document.getElementById('refine-prompt-input');
     const saveRefinePromptBtn = document.getElementById('save-refine-prompt');
     const resetRefinePromptBtn = document.getElementById('reset-refine-prompt');
+
+    const refineNoChatPromptInput = document.getElementById('refine-no-chat-prompt-input');
+    const saveRefineNoChatPromptBtn = document.getElementById('save-refine-no-chat-prompt');
+    const resetRefineNoChatPromptBtn = document.getElementById('reset-refine-no-chat-prompt');
 
     // History UI Elements
     const historyBtn = document.getElementById('history-btn');
@@ -149,15 +165,26 @@ document.addEventListener('DOMContentLoaded', () => {
     refineBtn.addEventListener('click', async () => {
         const originalText = promptInput.value.trim();
         const currentOutput = outputDisplay.innerText;
+        const includeChat = document.getElementById('include-chat').checked;
         
-        if (!originalText || !currentOutput || !client.history || client.history.length === 0) {
-            alert("Please optimize a prompt and have a chat conversation first.");
+        if (!originalText || !currentOutput) {
+            alert("Please optimize a prompt first.");
             return;
+        }
+
+        if (includeChat && (!client.history || client.history.length === 0)) {
+             alert("No chat history to include. Please chat first or uncheck 'Include Chat'.");
+             return;
         }
 
         setLoading(true);
         try {
-            const result = await client.refinePrompt(originalText, currentOutput, client.history);
+            let result;
+            if (includeChat) {
+                result = await client.refinePrompt(originalText, currentOutput, client.history);
+            } else {
+                result = await client.noChatRefinePrompt(originalText, currentOutput);
+            }
             addToHistory(result);
             saveState(); // Save after refinement
         } catch (error) {
@@ -473,15 +500,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Prompt Settings Logic ---
 
-    customizePromptsBtn.addEventListener('click', () => {
+    // Helper to open specific prompt section
+    function openPromptSettings(sectionId) {
         // Load current prompts
         optimizePromptInput.value = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
         chatPromptInput.value = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
         refinePromptInput.value = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+        refineNoChatPromptInput.value = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+
+        // Hide all sections
+        sectionOptimize.classList.add('hidden');
+        sectionRefine.classList.add('hidden');
+        sectionRefineNoChat.classList.add('hidden');
+        sectionChat.classList.add('hidden');
+
+        // Show requested section
+        document.getElementById(sectionId).classList.remove('hidden');
 
         settingsModal.classList.add('hidden'); // Close main settings
         promptSettingsModal.classList.remove('hidden');
-    });
+    }
+
+    editOptimizePromptBtn.addEventListener('click', () => openPromptSettings('section-optimize'));
+    editRefinePromptBtn.addEventListener('click', () => openPromptSettings('section-refine'));
+    editRefineNoChatPromptBtn.addEventListener('click', () => openPromptSettings('section-refine-no-chat'));
+    editChatPromptBtn.addEventListener('click', () => openPromptSettings('section-chat'));
 
     closePromptSettingsBtn.addEventListener('click', () => {
         promptSettingsModal.classList.add('hidden');
@@ -543,6 +586,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const defaultVal = LLMClient.DEFAULT_PROMPTS.refine;
             refinePromptInput.value = defaultVal;
             localStorage.setItem('slop_prompt_refine', defaultVal);
+        }
+    });
+
+    // Refine (No Chat) Prompt Actions
+    saveRefineNoChatPromptBtn.addEventListener('click', () => {
+        const val = refineNoChatPromptInput.value.trim();
+        if (val) {
+            localStorage.setItem('slop_prompt_refine_no_chat', val);
+            alert('Refine (No Chat) prompt saved!');
+        }
+    });
+
+    resetRefineNoChatPromptBtn.addEventListener('click', () => {
+        if (confirm('Reset refine (no chat) prompt to default?')) {
+            const defaultVal = LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+            refineNoChatPromptInput.value = defaultVal;
+            localStorage.setItem('slop_prompt_refine_no_chat', defaultVal);
         }
     });
 
