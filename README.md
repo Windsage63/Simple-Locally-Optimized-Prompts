@@ -2,7 +2,7 @@
 ---
 ## *A frontend-only web application to help you craft, discuss, refine, and revise your AI prompts.*
 
-## 💻Main Screen ![SLOP UI](screenshot.png)
+## 💻Main Screen ![SLOP UI](docs/img/screenshot.png)
 
 # Simple Locally Optimized Prompts (SLOP) 🧲 
 
