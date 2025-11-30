@@ -1,71 +1,99 @@
-// LLMClient is now available globally via api.js
-// SessionManager is now available globally via session-manager.js
+/**
+ * SLOP - Simple Locally Optimized Prompts
+ * Main Application Orchestrator
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize core services
     const client = new LLMClient();
     const sessionManager = new SessionManager();
-    
-    // UI Elements
+    const promptLibrary = new PromptLibrary();
+
+    // Initialize prompt library database
+    try {
+        await promptLibrary.open();
+    } catch (error) {
+        console.error('Failed to initialize prompt library:', error);
+    }
+
+    // Initialize settings (from settings.js)
+    initSettings(client);
+
+    // --- Core UI Elements ---
     const promptInput = document.getElementById('prompt-input');
     const outputDisplay = document.getElementById('output-display');
     const optimizeBtn = document.getElementById('optimize-btn');
-    const newChatBtn = document.getElementById('new-chat-btn'); // Renamed from clear-btn
+    const refineBtn = document.getElementById('refine-btn');
+    const newChatBtn = document.getElementById('new-chat-btn');
     const copyBtn = document.getElementById('copy-btn');
-    const savePromptBtn = document.getElementById('save-prompt-btn'); // New
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettingsBtn = document.getElementById('close-settings');
-    const saveSettingsBtn = document.getElementById('save-settings');
-    const apiUrlInput = document.getElementById('api-url');
-    const modelNameInput = document.getElementById('model-name');
+    const savePromptBtn = document.getElementById('save-prompt-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
-    const fetchModelsBtn = document.getElementById('fetch-models-btn');
-    const modelSelect = document.getElementById('model-select');
-    const apiKeyInput = document.getElementById('api-key');
-    const saveKeyCheckbox = document.getElementById('save-key');
-    const keySavedBadge = document.getElementById('key-saved-badge');
-    
-    // Prompt Settings Elements
-    const customizePromptsBtn = document.getElementById('customize-prompts-btn');
-    const promptSettingsModal = document.getElementById('prompt-settings-modal');
-    const closePromptSettingsBtn = document.getElementById('close-prompt-settings');
-    
-    const optimizePromptInput = document.getElementById('optimize-prompt-input');
-    const saveOptimizePromptBtn = document.getElementById('save-optimize-prompt');
-    const resetOptimizePromptBtn = document.getElementById('reset-optimize-prompt');
-    
-    const chatPromptInput = document.getElementById('chat-prompt-input');
-    const saveChatPromptBtn = document.getElementById('save-chat-prompt');
-    const resetChatPromptBtn = document.getElementById('reset-chat-prompt');
-    
-    const refinePromptInput = document.getElementById('refine-prompt-input');
-    const saveRefinePromptBtn = document.getElementById('save-refine-prompt');
-    const resetRefinePromptBtn = document.getElementById('reset-refine-prompt');
-
-    // History UI Elements
-    const historyBtn = document.getElementById('history-btn');
-    const historyModal = document.getElementById('history-modal');
-    const closeHistoryBtn = document.getElementById('close-history');
-    const sessionsList = document.getElementById('sessions-list');
-
-    // Initialize Settings UI
-    apiUrlInput.value = client.baseUrl;
-    modelNameInput.value = client.model;
 
     // Chat Elements
     const chatInput = document.getElementById('chat-input');
     const sendChatBtn = document.getElementById('send-chat-btn');
     const chatHistoryDiv = document.getElementById('chat-history');
-    const refineBtn = document.getElementById('refine-btn');
+
+    // History Navigation
     const historyNav = document.getElementById('history-nav');
     const prevResultBtn = document.getElementById('prev-result');
     const nextResultBtn = document.getElementById('next-result');
     const historyCounter = document.getElementById('history-counter');
 
-    // State
+    // History Modal Elements
+    const historyBtn = document.getElementById('history-btn');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryBtn = document.getElementById('close-history');
+    const sessionsList = document.getElementById('sessions-list');
+
+    // Library Modal Elements
+    const librarySaveBtn = document.getElementById('library-save-btn');
+    const libraryBtn = document.getElementById('library-btn');
+    const libraryModal = document.getElementById('library-modal');
+    const closeLibraryBtn = document.getElementById('close-library');
+    const libraryNameFilter = document.getElementById('library-name-filter');
+    const libraryPromptList = document.getElementById('library-prompt-list');
+    const libraryImportBtn = document.getElementById('library-import-btn');
+    const importFileInput = document.getElementById('import-file-input');
+    const libraryDeleteBtn = document.getElementById('library-delete-btn');
+    const libraryDownloadBtn = document.getElementById('library-download-btn');
+    const libraryOpenBtn = document.getElementById('library-open-btn');
+
+    // --- Application State ---
     let resultHistory = [];
     let currentHistoryIndex = -1;
     let currentSession = null;
+    let isStreaming = false;
+    let selectedPromptId = null;
+
+    // Throttled rendering for streaming output
+    let renderTimeout = null;
+    let pendingContent = '';
+
+    function scheduleRender(content) {
+        pendingContent = content;
+        if (!renderTimeout) {
+            renderTimeout = setTimeout(() => {
+                renderOutput(pendingContent);
+                renderTimeout = null;
+            }, 50);
+        }
+    }
+
+    function flushRender() {
+        if (renderTimeout) {
+            clearTimeout(renderTimeout);
+            renderTimeout = null;
+        }
+        if (pendingContent) {
+            renderOutput(pendingContent);
+            pendingContent = '';
+        }
+    }
+
+    function renderOutput(text) {
+        outputDisplay.value = text;
+    }
 
     // --- Session Management ---
 
@@ -74,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionId) {
             currentSession = sessionManager.getSession(sessionId);
         }
-        
+
         if (!currentSession) {
             currentSession = sessionManager.createNewSession();
         }
@@ -99,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
         } else {
-            outputDisplay.innerHTML = '';
+            outputDisplay.value = '';
             historyNav.classList.add('hidden');
         }
     }
@@ -115,65 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionManager.saveSession(currentSession);
     }
 
-    // Initialize
+    // Initialize session
     loadCurrentSession();
 
+    // --- History Navigation ---
 
-    // --- Event Listeners ---
-
-    optimizeBtn.addEventListener('click', async () => {
-        const text = promptInput.value.trim();
-        if (!text) return;
-
-        // Reset chat history on new optimization? 
-        // User requested: "The history should automatically update as chat continues to keep the work safe."
-        // But usually optimization resets the context. Let's keep the behavior of resetting chat for a *fresh* optimization,
-        // but since we have "New Chat" button now, maybe this is just a re-optimization?
-        // Let's stick to the original behavior: Optimize clears chat context for the new prompt.
-        
-        client.history = [];
-        chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
-
-        setLoading(true);
-        try {
-            const result = await client.optimizePrompt(text);
-            addToHistory(result);
-            saveState(); // Save after optimization
-        } catch (error) {
-            renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
-        } finally {
-            setLoading(false);
-        }
-    });
-
-    refineBtn.addEventListener('click', async () => {
-        const originalText = promptInput.value.trim();
-        const currentOutput = outputDisplay.innerText;
-        
-        if (!originalText || !currentOutput || !client.history || client.history.length === 0) {
-            alert("Please optimize a prompt and have a chat conversation first.");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const result = await client.refinePrompt(originalText, currentOutput, client.history);
-            addToHistory(result);
-            saveState(); // Save after refinement
-        } catch (error) {
-            renderOutput(`Refinement Error: ${error.message}`);
-        } finally {
-            setLoading(false);
-        }
-    });
-
-    // History Navigation Logic
     function addToHistory(result) {
-        // If we were browsing history and generate new result, truncate future history
         if (currentHistoryIndex < resultHistory.length - 1) {
             resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
         }
-        
         resultHistory.push(result);
         currentHistoryIndex = resultHistory.length - 1;
         updateHistoryUI();
@@ -184,11 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resultHistory.length > 1) {
             historyNav.classList.remove('hidden');
             historyCounter.textContent = `${currentHistoryIndex + 1} / ${resultHistory.length}`;
-            
             prevResultBtn.disabled = currentHistoryIndex === 0;
             nextResultBtn.disabled = currentHistoryIndex === resultHistory.length - 1;
-            
-            // Visual feedback for disabled state
             prevResultBtn.style.opacity = prevResultBtn.disabled ? '0.5' : '1';
             nextResultBtn.style.opacity = nextResultBtn.disabled ? '0.5' : '1';
         } else {
@@ -201,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentHistoryIndex--;
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
-            saveState(); // Save index position
+            saveState();
         }
     });
 
@@ -210,39 +185,213 @@ document.addEventListener('DOMContentLoaded', () => {
             currentHistoryIndex++;
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
-            saveState(); // Save index position
+            saveState();
         }
     });
 
-    // Chat Logic
+    // --- Loading State ---
+
+    const optimizeBtnOriginalHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Optimize';
+    const refineBtnOriginalHTML = '<i class="fa-solid fa-rotate-right"></i> Refine';
+    const stopBtnHTML = '<i class="fa-solid fa-stop"></i> Stop';
+
+    function setLoading(loading, mode = null) {
+        isStreaming = loading;
+
+        if (loading) {
+            loadingOverlay.classList.remove('hidden');
+            if (mode === 'optimize') {
+                optimizeBtn.innerHTML = stopBtnHTML;
+                optimizeBtn.classList.add('stop-btn');
+                refineBtn.disabled = true;
+            } else if (mode === 'refine') {
+                refineBtn.innerHTML = stopBtnHTML;
+                refineBtn.classList.add('stop-btn');
+                optimizeBtn.disabled = true;
+            } else {
+                optimizeBtn.disabled = true;
+                refineBtn.disabled = true;
+            }
+        } else {
+            loadingOverlay.classList.add('hidden');
+            optimizeBtn.innerHTML = optimizeBtnOriginalHTML;
+            optimizeBtn.classList.remove('stop-btn');
+            optimizeBtn.disabled = false;
+            refineBtn.innerHTML = refineBtnOriginalHTML;
+            refineBtn.classList.remove('stop-btn');
+            refineBtn.disabled = false;
+        }
+    }
+
+    // --- Optimize Handler ---
+
+    optimizeBtn.addEventListener('click', async () => {
+        const text = promptInput.value.trim();
+        if (!text) return;
+
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
+
+        client.history = [];
+        chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
+
+        setLoading(true, 'optimize');
+        outputDisplay.value = '';
+        let fullResult = '';
+        let streamStarted = false;
+
+        try {
+            for await (const chunk of client.optimizePromptStream(text)) {
+                if (!streamStarted) {
+                    streamStarted = true;
+                    loadingOverlay.classList.add('hidden');
+                }
+                fullResult += chunk;
+                scheduleRender(fullResult);
+            }
+            flushRender();
+            addToHistory(fullResult);
+            saveState();
+        } catch (error) {
+            flushRender();
+            if (error.name === 'AbortError') {
+                if (fullResult) {
+                    addToHistory(fullResult);
+                    saveState();
+                }
+            } else {
+                renderOutput(`Error: ${error.message}\n\nPlease check your API settings and ensure the local LLM is running.`);
+            }
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // --- Refine Handler ---
+
+    refineBtn.addEventListener('click', async () => {
+        const originalText = promptInput.value.trim();
+        const currentOutput = outputDisplay.value;
+        const includeChat = document.getElementById('include-chat').checked;
+
+        if (!originalText || !currentOutput) {
+            alert("Please optimize a prompt first.");
+            return;
+        }
+
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
+
+        if (includeChat && (!client.history || client.history.length === 0)) {
+            alert("No chat history to include. Please chat first or uncheck 'Include Chat'.");
+            return;
+        }
+
+        setLoading(true, 'refine');
+        outputDisplay.value = '';
+        let fullResult = '';
+        let streamStarted = false;
+
+        try {
+            const stream = includeChat
+                ? client.refinePromptStream(originalText, currentOutput, client.history)
+                : client.noChatRefinePromptStream(originalText, currentOutput);
+
+            for await (const chunk of stream) {
+                if (!streamStarted) {
+                    streamStarted = true;
+                    loadingOverlay.classList.add('hidden');
+                }
+                fullResult += chunk;
+                scheduleRender(fullResult);
+            }
+            flushRender();
+            addToHistory(fullResult);
+            saveState();
+        } catch (error) {
+            flushRender();
+            if (error.name === 'AbortError') {
+                if (fullResult) {
+                    addToHistory(fullResult);
+                    saveState();
+                }
+            } else {
+                renderOutput(`Refinement Error: ${error.message}`);
+            }
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // --- Chat Handler ---
+
+    function appendChatMessage(role, text, save = true) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${role}`;
+        msgDiv.innerText = text;
+        chatHistoryDiv.appendChild(msgDiv);
+        return msgDiv;
+    }
+
     async function handleChat() {
         const message = chatInput.value.trim();
         if (!message) return;
 
+        if (isStreaming) {
+            client.abort();
+            return;
+        }
+
         appendChatMessage('user', message);
         chatInput.value = '';
-        saveState(); // Save user message immediately
-        
-        // Auto-scroll
+        saveState();
+
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 
+        const assistantMsgDiv = appendChatMessage('assistant', '');
+        let fullResponse = '';
+
+        sendChatBtn.disabled = true;
+        const originalIcon = sendChatBtn.innerHTML;
+        sendChatBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+        sendChatBtn.disabled = false;
+        sendChatBtn.onclick = () => client.abort();
+        isStreaming = true;
+
         try {
-            // Get context
             const originalPrompt = promptInput.value.trim();
             const optimizedResult = currentHistoryIndex >= 0 ? resultHistory[currentHistoryIndex] : null;
-            
-            // Call chat with context
-            const response = await client.chat(message, originalPrompt, optimizedResult);
-            appendChatMessage('assistant', response);
-            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-            saveState(); // Save assistant response
+
+            for await (const chunk of client.chatStream(message, originalPrompt, optimizedResult)) {
+                fullResponse += chunk;
+                assistantMsgDiv.innerText = fullResponse;
+                chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+            }
+            saveState();
         } catch (error) {
-            appendChatMessage('system', `Error: ${error.message}`);
+            if (error.name === 'AbortError') {
+                if (!fullResponse) {
+                    assistantMsgDiv.innerText = '[Cancelled]';
+                    assistantMsgDiv.classList.add('system');
+                }
+            } else {
+                assistantMsgDiv.innerText = `Error: ${error.message}`;
+                assistantMsgDiv.classList.remove('assistant');
+                assistantMsgDiv.classList.add('system');
+            }
+        } finally {
+            isStreaming = false;
+            sendChatBtn.innerHTML = originalIcon;
+            sendChatBtn.onclick = handleChat;
         }
     }
 
     sendChatBtn.addEventListener('click', handleChat);
-    
+
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -250,72 +399,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function appendChatMessage(role, text, save = true) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `chat-message ${role}`;
-        msgDiv.innerText = text;
-        chatHistoryDiv.appendChild(msgDiv);
-    }
+    // --- Input/Output Event Handlers ---
 
-    // New Chat Button
+    outputDisplay.addEventListener('input', () => {
+        if (currentHistoryIndex >= 0 && resultHistory[currentHistoryIndex] !== undefined) {
+            resultHistory[currentHistoryIndex] = outputDisplay.value;
+            saveState();
+        }
+    });
+
+    promptInput.addEventListener('input', () => {
+        saveState();
+    });
+
+    // --- New Chat Button ---
+
     newChatBtn.addEventListener('click', () => {
-        // Create new session
         currentSession = sessionManager.createNewSession();
-        loadCurrentSession(); // Reload UI with empty session
+        loadCurrentSession();
     });
 
-    // Save Prompt Button
-    savePromptBtn.addEventListener('click', () => {
-        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
-            alert("No prompt to save!");
-            return;
-        }
-
-        const content = resultHistory[currentHistoryIndex];
-        let filename = 'optimized-prompt.md';
-        
-        // Remove markdown code blocks if present
-        // This regex removes the opening ```markdown (or other lang) and the closing ```
-        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '');
-        cleanContent = cleanContent.trim();
-
-        // Try to parse YAML frontmatter to get the name
-        try {
-            // Match YAML block (find the first one)
-            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
-            if (match) {
-                const yamlText = match[1];
-                
-                // Security: Basic size check before parsing to prevent DoS
-                if (yamlText.length > 50000) {
-                    console.warn("YAML frontmatter too large, skipping parse.");
-                    throw new Error("YAML too large");
-                }
-
-                const data = jsyaml.load(yamlText);
-                if (data && data.name) {
-                    // Sanitize filename
-                    filename = data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
-                }
-            }
-        } catch (e) {
-            console.error("Failed to parse YAML for filename:", e);
-        }
-
-        // Create blob and download
-        const blob = new Blob([cleanContent], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
+    // --- Copy Button ---
 
     copyBtn.addEventListener('click', () => {
-        const content = outputDisplay.innerText;
+        const content = outputDisplay.value;
         if (content) {
             navigator.clipboard.writeText(content);
             const originalIcon = copyBtn.innerHTML;
@@ -324,19 +431,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Input auto-save
-    promptInput.addEventListener('input', () => {
-        saveState();
+    // --- Save Prompt Button (Download) ---
+
+    savePromptBtn.addEventListener('click', () => {
+        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
+            alert("No prompt to save!");
+            return;
+        }
+
+        const content = resultHistory[currentHistoryIndex];
+        let filename = 'optimized-prompt.md';
+
+        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '').trim();
+
+        try {
+            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
+            if (match) {
+                const yamlText = match[1];
+                if (yamlText.length <= 50000) {
+                    const data = jsyaml.load(yamlText);
+                    if (data && data.name) {
+                        filename = sanitizeFilename(data.name);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse YAML for filename:", e);
+        }
+
+        downloadFile(cleanContent, filename);
     });
 
-    // --- History Modal Logic ---
-    
+    // --- History Modal ---
+
     function renderSessionsList() {
         const sessions = sessionManager.getAllSessions();
         const list = Object.values(sessions).sort((a, b) => b.updated - a.updated);
-        
+
         sessionsList.innerHTML = '';
-        
+
         if (list.length === 0) {
             sessionsList.innerHTML = '<p class="no-sessions">No saved sessions.</p>';
             return;
@@ -350,10 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const date = new Date(session.updated).toLocaleString();
-            
+
             item.innerHTML = `
                 <div class="session-info">
-                    <div class="session-name">${session.name || 'Untitled Session'}</div>
+                    <div class="session-name">${escapeHtml(session.name || 'Untitled Session')}</div>
                     <div class="session-date">${date}</div>
                 </div>
                 <div class="session-actions">
@@ -363,22 +496,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // Click on item to load (excluding delete button)
             item.addEventListener('click', (e) => {
                 if (!e.target.closest('.delete-session')) {
                     sessionManager.setCurrentSessionId(session.id);
                     loadCurrentSession();
-                    historyModal.classList.add('hidden');
+                    hideModal(historyModal);
                 }
             });
 
-            // Delete button
             const deleteBtn = item.querySelector('.delete-session');
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (confirm('Are you sure you want to delete this session?')) {
                     sessionManager.deleteSession(session.id);
-                    // If we deleted the current session, create a new one
                     if (session.id === currentSession.id) {
                         currentSession = sessionManager.createNewSession();
                         loadCurrentSession();
@@ -393,281 +523,237 @@ document.addEventListener('DOMContentLoaded', () => {
 
     historyBtn.addEventListener('click', () => {
         renderSessionsList();
-        historyModal.classList.remove('hidden');
+        showModal(historyModal);
     });
 
-    closeHistoryBtn.addEventListener('click', () => {
-        historyModal.classList.add('hidden');
-    });
+    setupModal(historyModal, closeHistoryBtn);
 
-    historyModal.addEventListener('click', (e) => {
-        if (e.target === historyModal) {
-            historyModal.classList.add('hidden');
+    // --- Library Modal ---
+
+    async function renderLibraryPromptList(filter = '') {
+        const allLibraryPrompts = await promptLibrary.getAllPrompts();
+        const lowerFilter = filter.toLowerCase();
+
+        let filtered = allLibraryPrompts;
+        if (lowerFilter) {
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(lowerFilter));
         }
-    });
 
+        filtered.sort((a, b) => b.updated - a.updated);
 
-    // Settings Modal Logic
-    settingsBtn.addEventListener('click', () => {
-        settingsModal.classList.remove('hidden');
-        apiUrlInput.value = client.baseUrl;
-        modelNameInput.value = client.model;
-        apiKeyInput.value = client.apiKey;
-        
-        const isSaved = !!localStorage.getItem('slop_api_key');
-        saveKeyCheckbox.checked = isSaved;
-        
-        if (isSaved) {
-            keySavedBadge.classList.remove('hidden');
-        } else {
-            keySavedBadge.classList.add('hidden');
-        }
-    });
+        libraryPromptList.innerHTML = '';
 
-    closeSettingsBtn.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
-    });
-
-    saveSettingsBtn.addEventListener('click', () => {
-        const url = apiUrlInput.value.trim();
-        const model = modelNameInput.value.trim();
-        const apiKey = apiKeyInput.value.trim();
-        const saveKey = saveKeyCheckbox.checked;
-        
-        if (url && model) {
-            client.updateConfig(url, model, apiKey, saveKey);
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    // Close modal on outside click
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) {
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    // --- Prompt Settings Logic ---
-
-    customizePromptsBtn.addEventListener('click', () => {
-        // Load current prompts
-        optimizePromptInput.value = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
-        chatPromptInput.value = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-        refinePromptInput.value = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
-
-        settingsModal.classList.add('hidden'); // Close main settings
-        promptSettingsModal.classList.remove('hidden');
-    });
-
-    closePromptSettingsBtn.addEventListener('click', () => {
-        promptSettingsModal.classList.add('hidden');
-        settingsModal.classList.remove('hidden'); // Re-open main settings
-    });
-
-    promptSettingsModal.addEventListener('click', (e) => {
-        if (e.target === promptSettingsModal) {
-            promptSettingsModal.classList.add('hidden');
-            settingsModal.classList.remove('hidden');
-        }
-    });
-
-    // Optimize Prompt Actions
-    saveOptimizePromptBtn.addEventListener('click', () => {
-        const val = optimizePromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_optimize', val);
-            alert('Optimize prompt saved!');
-        }
-    });
-
-    resetOptimizePromptBtn.addEventListener('click', () => {
-        if (confirm('Reset optimize prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.optimize;
-            optimizePromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_optimize', defaultVal);
-        }
-    });
-
-    // Chat Prompt Actions
-    saveChatPromptBtn.addEventListener('click', () => {
-        const val = chatPromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_chat', val);
-            alert('Chat prompt saved!');
-        }
-    });
-
-    resetChatPromptBtn.addEventListener('click', () => {
-        if (confirm('Reset chat prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.chat;
-            chatPromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_chat', defaultVal);
-        }
-    });
-
-    // Refine Prompt Actions
-    saveRefinePromptBtn.addEventListener('click', () => {
-        const val = refinePromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_refine', val);
-            alert('Refine prompt saved!');
-        }
-    });
-
-    resetRefinePromptBtn.addEventListener('click', () => {
-        if (confirm('Reset refine prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.refine;
-            refinePromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_refine', defaultVal);
-        }
-    });
-
-    // Fetch Models Logic
-    fetchModelsBtn.addEventListener('click', async () => {
-        const originalIcon = fetchModelsBtn.innerHTML;
-        fetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        
-        try {
-            // Temporarily update client URL to fetch from the input value
-            const tempClient = new LLMClient();
-            tempClient.baseUrl = apiUrlInput.value.trim();
-            
-            const models = await tempClient.getModels();
-            
-            if (models && models.length > 0) {
-                // Show select, hide text input if we have models
-                modelSelect.innerHTML = '';
-                models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.id;
-                    option.textContent = m.id;
-                    modelSelect.appendChild(option);
-                });
-                
-                modelSelect.classList.remove('hidden');
-                modelNameInput.classList.add('hidden');
-                
-                // When select changes, update the hidden text input (or just use select value)
-                modelSelect.addEventListener('change', () => {
-                    modelNameInput.value = modelSelect.value;
-                });
-                
-                // Set initial value
-                modelSelect.value = models[0].id;
-                modelNameInput.value = models[0].id;
-            } else {
-                alert('No models found or empty list returned.');
+        filtered.forEach(prompt => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            if (prompt.id === selectedPromptId) {
+                li.classList.add('selected');
             }
-        } catch (error) {
-            alert('Failed to fetch models. Check URL.');
-            console.error(error);
-        } finally {
-            fetchModelsBtn.innerHTML = originalIcon;
+            li.dataset.id = prompt.id;
+            const tagsDisplay = (prompt.tags || []).map(t => '#' + t).join(', ');
+            li.innerHTML = `
+                <div class="item-header">
+                    <div class="item-name">${escapeHtml(prompt.name)}</div>
+                    <div class="item-tags">${escapeHtml(tagsDisplay)}</div>
+                </div>
+                <div class="item-description">${escapeHtml(prompt.description || 'No description')}</div>
+            `;
+            li.addEventListener('click', () => {
+                selectedPromptId = prompt.id;
+                libraryPromptList.querySelectorAll('.list-item').forEach(item => {
+                    item.classList.toggle('selected', parseInt(item.dataset.id) === prompt.id);
+                });
+            });
+            libraryPromptList.appendChild(li);
+        });
+    }
+
+    librarySaveBtn.addEventListener('click', async () => {
+        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
+            alert('No prompt to save!');
+            return;
+        }
+
+        const content = resultHistory[currentHistoryIndex];
+        const parsed = promptLibrary.parseYamlFrontmatter(content);
+        const baseName = parsed.name;
+
+        const allPrompts = await promptLibrary.getAllPrompts();
+        const existing = allPrompts.find(p => p.name.toLowerCase() === baseName.toLowerCase());
+
+        if (existing) {
+            const choice = confirm(`A prompt named "${baseName}" already exists.\n\nClick OK to overwrite, or Cancel to keep both (will add a number).`);
+
+            if (choice) {
+                try {
+                    await promptLibrary.deletePrompt(existing.id);
+                    await promptLibrary.savePrompt(content, false);
+                    alert('Prompt overwritten in library!');
+                } catch (error) {
+                    alert('Failed to save prompt: ' + error.message);
+                }
+            } else {
+                try {
+                    await promptLibrary.savePrompt(content, true);
+                    alert('Prompt saved to library with new name!');
+                } catch (error) {
+                    alert('Failed to save prompt: ' + error.message);
+                }
+            }
+        } else {
+            try {
+                await promptLibrary.savePrompt(content, false);
+                alert('Prompt saved to library!');
+            } catch (error) {
+                alert('Failed to save prompt: ' + error.message);
+            }
         }
     });
 
-    // Helpers
-    function setLoading(isLoading) {
-        if (isLoading) {
-            loadingOverlay.classList.remove('hidden');
-            optimizeBtn.disabled = true;
-            refineBtn.disabled = true;
-        } else {
-            loadingOverlay.classList.add('hidden');
-            optimizeBtn.disabled = false;
-            refineBtn.disabled = false;
+    libraryBtn.addEventListener('click', async () => {
+        selectedPromptId = null;
+        libraryNameFilter.value = '';
+        await renderLibraryPromptList();
+        showModal(libraryModal);
+    });
+
+    setupModal(libraryModal, closeLibraryBtn);
+
+    libraryNameFilter.addEventListener('input', () => {
+        renderLibraryPromptList(libraryNameFilter.value);
+    });
+
+    libraryDeleteBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
         }
-    }
 
-    function renderOutput(markdown) {
-        // Use marked to parse markdown
-        const rawHtml = marked.parse(markdown);
-        // Sanitize with DOMPurify
-        const cleanHtml = DOMPurify.sanitize(rawHtml);
-        outputDisplay.innerHTML = cleanHtml;
-    }
+        if (!confirm('Delete this prompt?')) return;
 
-    // ===== RESIZE HANDLE LOGIC =====
+        try {
+            await promptLibrary.deletePrompt(selectedPromptId);
+            selectedPromptId = null;
+            await renderLibraryPromptList(libraryNameFilter.value);
+        } catch (error) {
+            alert('Failed to delete prompt: ' + error.message);
+        }
+    });
+
+    libraryDownloadBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
+        }
+
+        const prompt = await promptLibrary.getPrompt(selectedPromptId);
+        if (!prompt) return;
+
+        downloadFile(prompt.content, sanitizeFilename(prompt.name));
+    });
+
+    libraryOpenBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
+        }
+
+        const prompt = await promptLibrary.getPrompt(selectedPromptId);
+        if (!prompt) return;
+
+        outputDisplay.value = prompt.content;
+        addToHistory(prompt.content);
+        saveState();
+        hideModal(libraryModal);
+    });
+
+    libraryImportBtn.addEventListener('click', () => {
+        importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                await promptLibrary.savePrompt(event.target.result, true);
+                alert('Prompt imported!');
+                await renderLibraryPromptList(libraryNameFilter.value);
+            } catch (error) {
+                alert('Failed to import prompt: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+        importFileInput.value = '';
+    });
+
+    // --- Resize Handle ---
+
     const resizeHandle = document.getElementById('resize-handle');
     const inputPanel = document.querySelector('.input-panel');
-    const inputArea = document.querySelector('.input-area');
     const chatInterface = document.querySelector('.chat-interface');
-    
-    // Minimum heights in pixels
+
     const MIN_INPUT_HEIGHT = 280;
     const MIN_CHAT_HEIGHT = 310;
-    
-    // Load saved chat height percentage from localStorage, default to 35%
+
     const savedChatHeight = localStorage.getItem('chatHeightPercentage');
     if (savedChatHeight) {
         chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
     }
-    
+
     let isResizing = false;
     let startY = 0;
     let startChatHeight = 0;
-    
+
     resizeHandle.addEventListener('mousedown', (e) => {
         isResizing = true;
         startY = e.clientY;
-        
-        // Get current chat height as percentage
+
         const chatStyle = window.getComputedStyle(chatInterface);
         const chatHeightPx = parseFloat(chatStyle.height);
         const panelHeightPx = inputPanel.offsetHeight;
         startChatHeight = (chatHeightPx / panelHeightPx) * 100;
-        
-        // Prevent text selection during drag
+
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'ns-resize';
-        
         e.preventDefault();
     });
-    
+
     document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
-        
+
         const deltaY = e.clientY - startY;
         const panelHeight = inputPanel.offsetHeight;
-        
-        // Calculate the change as a percentage of the panel height
         const deltaPercent = (deltaY / panelHeight) * 100;
-        
-        // New chat height percentage (dragging down decreases chat, up increases chat)
+
         let newChatHeightPercent = startChatHeight - deltaPercent;
-        
-        // Calculate what the input area height would be
+
         const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
         const newInputHeightPx = panelHeight - newChatHeightPx;
-        
-        // Enforce pixel-based minimum constraints
+
         if (newInputHeightPx < MIN_INPUT_HEIGHT) {
-            // Input area too small, limit it
             newChatHeightPercent = ((panelHeight - MIN_INPUT_HEIGHT) / panelHeight) * 100;
         } else if (newChatHeightPx < MIN_CHAT_HEIGHT) {
-            // Chat area too small, limit it
             newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
         }
-        
-        // Clamp between reasonable bounds (at least 15% and at most 85%)
+
         newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
-        
-        // Apply the new height
         chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
     });
-    
+
     document.addEventListener('mouseup', () => {
         if (isResizing) {
             isResizing = false;
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
-            
-            // Save the final chat height percentage to localStorage
+
             const chatStyle = window.getComputedStyle(chatInterface);
             const chatHeightPx = parseFloat(chatStyle.height);
             const panelHeightPx = inputPanel.offsetHeight;
             const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
-            
+
             localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
         }
     });

@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Locally Optimized Prompts</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="docs/img/icons/SLOP_icon_32x32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="docs/img/icons/SLOP_icon_64x64.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="docs/img/icons/SLOP_icon_128x128.png">
+    <link rel="apple-touch-icon" sizes="360x360" href="docs/img/icons/SLOP_icon_360x360.png">
     <link rel="stylesheet" href="css/google-fonts.css">
     <link rel="stylesheet" href="css/fontawesome.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Header -->
         <header class="glass-header">
             <div class="logo">
-                <i class="fa-solid fa-sparkles gradient-text"></i>
-                <span class="gradient-text">Simple Locally Optimized Prompts</span>
+                <img src="docs/img/logos/SLOP_Banner_360x103.png" alt="Simple Locally Optimized Prompts"
+                    class="logo-banner">
             </div>
             <div class="header-controls">
                 <button id="history-btn" class="icon-btn" title="History">
@@ -36,16 +42,21 @@
                         <button id="new-chat-btn" class="text-btn">New Chat / Prompt</button>
                     </div>
                 </div>
-                
+
                 <!-- Top: Main Input (Reduced Height) -->
                 <div class="editor-container input-area">
                     <textarea id="prompt-input" placeholder="Enter your idea here...
 Example:
-I want the best prompt ever written." spellcheck="false"></textarea>
+I want the best prompt ever written." spellcheck="true"></textarea>
                 </div>
 
                 <!-- Middle: Action Bar -->
                 <div class="action-bar">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="include-chat" checked>
+                        <label for="include-chat" title="Include chat history in refinement context">Include
+                            Chat</label>
+                    </div>
                     <button id="refine-btn" class="secondary-btn" title="Refine based on chat">
                         <i class="fa-solid fa-rotate-right"></i> Refine
                     </button>
@@ -85,11 +96,19 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                     <h2><i class="fa-solid fa-robot"></i> Optimized Result</h2>
                     <div class="panel-actions">
                         <div class="history-nav hidden" id="history-nav">
-                            <button id="prev-result" class="icon-btn small" title="Previous Result"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button id="prev-result" class="icon-btn small" title="Previous Result"><i
+                                    class="fa-solid fa-chevron-left"></i></button>
                             <span id="history-counter" class="nav-counter">1 / 1</span>
-                            <button id="next-result" class="icon-btn small" title="Next Result"><i class="fa-solid fa-chevron-right"></i></button>
+                            <button id="next-result" class="icon-btn small" title="Next Result"><i
+                                    class="fa-solid fa-chevron-right"></i></button>
                         </div>
                         <div class="divider"></div>
+                        <button id="library-save-btn" class="icon-btn" title="Save to Library">
+                            <i class="fa-solid fa-bookmark"></i>
+                        </button>
+                        <button id="library-btn" class="icon-btn" title="Prompt Library">
+                            <i class="fa-solid fa-book"></i>
+                        </button>
                         <button id="save-prompt-btn" class="icon-btn" title="Save Prompt">
                             <i class="fa-solid fa-download"></i>
                         </button>
@@ -99,7 +118,7 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                     </div>
                 </div>
                 <div class="editor-container">
-                    <div id="output-display" class="markdown-preview"></div>
+                    <textarea id="output-display" placeholder="Optimized prompt will appear here..."></textarea>
                     <div id="loading-overlay" class="hidden">
                         <div class="spinner"></div>
                         <p>Optimizing...</p>
@@ -117,36 +136,93 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                 <button id="close-settings" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="api-url">API Endpoint</label>
-                    <input type="text" id="api-url" placeholder="http://localhost:1234/v1">
-                    <small>Compatible with OpenAI-style endpoints (LM Studio, Ollama, etc.)</small>
+                <!-- Optimize/Refine API Section -->
+                <div class="api-config-section">
+                    <div class="api-section-header">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize / Refine API
+                    </div>
+                    <div class="form-group">
+                        <label for="api-url">API Endpoint</label>
+                        <input type="text" id="api-url" placeholder="http://localhost:1234/v1" spellcheck="false">
+                    </div>
+                    <div class="form-group">
+                        <div class="label-with-checkbox">
+                            <label for="api-key">API Key <span id="key-saved-badge" class="badge hidden"
+                                    title="Key saved locally"><i class="fa-solid fa-lock"></i> Saved</span></label>
+                            <div class="checkbox-inline">
+                                <input type="checkbox" id="save-key">
+                                <label for="save-key">Save Key</label>
+                            </div>
+                        </div>
+                        <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="form-group">
+                        <label for="model-name">Model Name</label>
+                        <div class="input-with-action">
+                            <input type="text" id="model-name" placeholder="local-model" spellcheck="false">
+                            <button id="fetch-models-btn" class="secondary-btn" title="Fetch available models">
+                                <i class="fa-solid fa-sync"></i>
+                            </button>
+                        </div>
+                        <select id="model-select" class="hidden"></select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="api-key">API Key <span id="key-saved-badge" class="badge hidden" title="Key saved locally"><i class="fa-solid fa-lock"></i> Saved</span></label>
-                    <input type="password" id="api-key" placeholder="sk-..." autocomplete="off">
-                    <small>Leave empty if not required or using env variables.</small>
+
+                <!-- Chat Assistant API Section -->
+                <div class="api-config-section">
+                    <div class="api-section-header">
+                        <i class="fa-regular fa-comments"></i> Chat Assistant API
+                    </div>
+                    <div class="form-group">
+                        <label for="chat-api-url">API Endpoint</label>
+                        <input type="text" id="chat-api-url" placeholder="http://localhost:1234/v1" spellcheck="false">
+                    </div>
+                    <div class="form-group">
+                        <div class="label-with-checkbox">
+                            <label for="chat-api-key">API Key <span id="chat-key-saved-badge" class="badge hidden"
+                                    title="Key saved locally"><i class="fa-solid fa-lock"></i> Saved</span></label>
+                            <div class="checkbox-inline">
+                                <input type="checkbox" id="chat-save-key">
+                                <label for="chat-save-key">Save Key</label>
+                            </div>
+                        </div>
+                        <input type="password" id="chat-api-key" placeholder="sk-..." autocomplete="off"
+                            spellcheck="false">
+                    </div>
+                    <div class="form-group">
+                        <label for="chat-model-name">Model Name</label>
+                        <div class="input-with-action">
+                            <input type="text" id="chat-model-name" placeholder="local-model" spellcheck="false">
+                            <button id="chat-fetch-models-btn" class="secondary-btn" title="Fetch available models">
+                                <i class="fa-solid fa-sync"></i>
+                            </button>
+                        </div>
+                        <select id="chat-model-select" class="hidden"></select>
+                    </div>
                 </div>
+
+                <!-- General Settings -->
                 <div class="form-group checkbox-group">
-                    <input type="checkbox" id="save-key">
-                    <label for="save-key">Save Key to Local Storage</label>
+                    <input type="checkbox" id="word-wrap">
+                    <label for="word-wrap">Enable Word Wrap</label>
                 </div>
+
                 <div class="form-group">
-                    <label for="model-name">Model Name</label>
-                    <div class="input-with-action">
-                        <input type="text" id="model-name" placeholder="local-model">
-                        <button id="fetch-models-btn" class="secondary-btn" title="Fetch available models">
-                            <i class="fa-solid fa-sync"></i>
+                    <label>Customize System Prompts</label>
+                    <div class="prompt-buttons-grid">
+                        <button id="edit-optimize-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize
+                        </button>
+                        <button id="edit-refine-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-rotate-right"></i> Refine
+                        </button>
+                        <button id="edit-refine-no-chat-prompt-btn" class="secondary-btn small">
+                            <i class="fa-solid fa-eraser"></i> Refine (No Chat)
+                        </button>
+                        <button id="edit-chat-prompt-btn" class="secondary-btn small">
+                            <i class="fa-regular fa-comments"></i> Chat Assistant
                         </button>
                     </div>
-                    <!-- Dropdown for models could be dynamically populated -->
-                    <select id="model-select" class="hidden"></select>
-                </div>
-                <div class="form-group">
-                    <label>System Prompts</label>
-                    <button id="customize-prompts-btn" class="secondary-btn" style="width: 100%;">
-                        <i class="fa-solid fa-sliders"></i> Customize System Prompts
-                    </button>
                 </div>
             </div>
             <div class="modal-footer">
@@ -178,49 +254,111 @@ I want the best prompt ever written." spellcheck="false"></textarea>
                 <button id="close-prompt-settings" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div class="prompt-editor-section">
+                <div id="section-optimize" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Optimize Prompt</h4>
                         <div class="section-actions">
-                            <button id="reset-optimize-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="reset-optimize-prompt" class="text-btn small"
+                                title="Reset to Default">Reset</button>
                             <button id="save-optimize-prompt" class="primary-btn small">Save</button>
                         </div>
                     </div>
-                    <textarea id="optimize-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="optimize-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
 
-                <div class="prompt-editor-section">
+                <div id="section-chat" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-regular fa-comments"></i> Chat Prompt</h4>
                         <div class="section-actions">
-                            <button id="reset-chat-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="reset-chat-prompt" class="text-btn small"
+                                title="Reset to Default">Reset</button>
                             <button id="save-chat-prompt" class="primary-btn small">Save</button>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{optimizedResult}}</p>
-                    <textarea id="chat-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="chat-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
 
-                <div class="prompt-editor-section">
+                <div id="section-refine" class="prompt-editor-section hidden">
                     <div class="section-header">
                         <h4><i class="fa-solid fa-rotate-right"></i> Refine Prompt</h4>
                         <div class="section-actions">
-                            <button id="reset-refine-prompt" class="text-btn small" title="Reset to Default">Reset</button>
+                            <button id="reset-refine-prompt" class="text-btn small"
+                                title="Reset to Default">Reset</button>
                             <button id="save-refine-prompt" class="primary-btn small">Save</button>
                         </div>
                     </div>
                     <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}, {{chatHistory}}</p>
-                    <textarea id="refine-prompt-input" rows="10" spellcheck="false"></textarea>
+                    <textarea id="refine-prompt-input" rows="15" spellcheck="true"></textarea>
+                </div>
+
+                <div id="section-refine-no-chat" class="prompt-editor-section hidden">
+                    <div class="section-header">
+                        <h4><i class="fa-solid fa-eraser"></i> Refine Prompt (No Chat)</h4>
+                        <div class="section-actions">
+                            <button id="reset-refine-no-chat-prompt" class="text-btn small"
+                                title="Reset to Default">Reset</button>
+                            <button id="save-refine-no-chat-prompt" class="primary-btn small">Save</button>
+                        </div>
+                    </div>
+                    <p class="hint-text">Variables: {{originalPrompt}}, {{currentResult}}</p>
+                    <textarea id="refine-no-chat-prompt-input" rows="15" spellcheck="true"></textarea>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="js/lib/marked.min.js"></script>
+    <!-- Library Modal -->
+    <div id="library-modal" class="modal hidden">
+        <div class="modal-content glass-panel library-modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-book"></i> Prompt Library</h3>
+                <button id="close-library" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body library-modal-body">
+                <!-- Search Filter -->
+                <div class="library-filters-row">
+                    <div class="filter-group">
+                        <label>Search by Name</label>
+                        <input type="text" id="library-name-filter" class="searchable-input"
+                            placeholder="Type to filter...">
+                    </div>
+                </div>
+
+                <!-- Prompt List (full width) -->
+                <div class="library-list-container">
+                    <ul id="library-prompt-list" class="prompt-list">
+                        <!-- Prompts will be populated here -->
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer library-footer">
+                <button id="library-import-btn" class="secondary-btn">
+                    <i class="fa-solid fa-file-import"></i> Import
+                </button>
+                <input type="file" id="import-file-input" accept=".md" class="hidden">
+                <div class="spacer"></div>
+                <button id="library-delete-btn" class="secondary-btn danger">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+                <button id="library-download-btn" class="secondary-btn">
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+                <button id="library-open-btn" class="primary-btn">
+                    <i class="fa-solid fa-folder-open"></i> Open
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/lib/js-yaml.min.js"></script>
-    <script src="js/lib/purify.min.js"></script>
+    <script src="js/utils/file-utils.js"></script>
+    <script src="js/utils/modal-manager.js"></script>
     <script src="js/api.js"></script>
     <script src="js/session-manager.js"></script>
+    <script src="js/prompt-library.js"></script>
+    <script src="js/settings.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>

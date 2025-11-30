@@ -23,7 +23,7 @@ body {
     color: var(--text-main);
     height: 100vh;
     overflow: hidden;
-    background-image: 
+    background-image:
         radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 20%);
 }
@@ -43,7 +43,7 @@ body {
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
-    height: 60px;
+    height: 73px;
 }
 
 .logo {
@@ -80,7 +80,8 @@ body {
     overflow: hidden;
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    min-height: 0; /* Prevent flex item from overflowing parent */
+    min-height: 0;
+    /* Prevent flex item from overflowing parent */
 }
 
 .panel-header {
@@ -105,7 +106,8 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Critical for nested flex scrolling */
+    min-height: 0;
+    /* Critical for nested flex scrolling */
     overflow: hidden;
 }
 
@@ -128,28 +130,9 @@ textarea::placeholder {
     color: rgba(148, 163, 184, 0.4);
 }
 
-.markdown-preview {
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 1.6;
-    height: 100%; /* Ensure it takes full height */
-}
-
-/* Markdown Styles */
-.markdown-preview pre {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
-    border-radius: 6px;
+textarea.no-wrap {
+    white-space: pre;
     overflow-x: auto;
-    margin: 1rem 0;
-}
-
-.markdown-preview code {
-    font-family: var(--font-mono);
-    color: #e2e8f0;
 }
 
 /* Buttons */
@@ -174,6 +157,17 @@ button {
 .primary-btn:hover {
     background: var(--primary-hover);
     transform: translateY(-1px);
+}
+
+.primary-btn.stop-btn,
+.secondary-btn.stop-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.primary-btn.stop-btn:hover,
+.secondary-btn.stop-btn:hover {
+    background: #b91c1c;
 }
 
 .icon-btn {
@@ -274,7 +268,8 @@ button {
     font-size: 0.9rem;
 }
 
-.form-group input, .form-group select {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 0.75rem;
     background: rgba(0, 0, 0, 0.2);
@@ -304,11 +299,13 @@ button {
     display: flex;
     gap: 0.75rem;
     background: rgba(0, 0, 0, 0.1);
-    justify-content: flex-end; /* Align buttons to the right */
+    justify-content: flex-end;
+    /* Align buttons to the right */
 }
 
 .input-area {
-    flex: 1; /* Take remaining space (approx 75%) */
+    flex: 1;
+    /* Take remaining space (approx 75%) */
     min-height: 150px;
 }
 
@@ -352,7 +349,8 @@ button {
 
 /* Chat Interface */
 .chat-interface {
-    flex: 0 0 35%; /* Increased to 35% height */
+    flex: 0 0 35%;
+    /* Increased to 35% height */
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -428,7 +426,8 @@ button {
 
 .chat-input-area textarea {
     padding: 0.5rem;
-    height: 80px; /* Increased for ~3 lines */
+    height: 80px;
+    /* Increased for ~3 lines */
     min-height: 80px;
     max-height: 150px;
     border-radius: 4px;
@@ -494,7 +493,9 @@ button {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Settings Styles */
@@ -583,4 +584,263 @@ button {
 
 .prompt-editor-section textarea:focus {
     border-color: var(--primary-color);
+}
+
+/* API Config Section Boxes */
+.api-config-section {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.api-section-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.api-config-section .form-group {
+    margin-bottom: 1rem;
+}
+
+.api-config-section .form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Label with inline checkbox */
+.label-with-checkbox {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.label-with-checkbox>label {
+    margin-bottom: 0;
+}
+
+.checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.checkbox-inline input {
+    width: auto;
+    margin: 0;
+}
+
+.checkbox-inline label {
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+/* Prompt Buttons Grid */
+.prompt-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.prompt-buttons-grid .secondary-btn {
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.secondary-btn.small {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Library Modal Styles */
+.library-modal-content {
+    width: 75%;
+    max-width: none;
+    height: 80vh;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.library-modal-content .modal-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.library-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Filters row */
+.library-filters-row {
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.library-filters-row .filter-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.searchable-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.searchable-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Prompt list container */
+.library-list-container {
+    flex: 1;
+    min-height: 100px;
+    overflow: hidden;
+}
+
+.prompt-list {
+    list-style: none;
+    height: 100%;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    margin: 0;
+    padding: 0;
+}
+
+/* Scrollbar styling for prompt list */
+.prompt-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.prompt-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.prompt-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.prompt-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.prompt-list .list-item {
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--glass-border);
+    font-size: 0.85rem;
+    transition: background 0.15s;
+}
+
+.prompt-list .list-item:last-child {
+    border-bottom: none;
+}
+
+.prompt-list .list-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.prompt-list .list-item.selected {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--primary-color);
+}
+
+/* First line: name and tags side by side */
+.prompt-list .list-item .item-header {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.prompt-list .list-item .item-name {
+    flex: 0 0 30%;
+    font-weight: 500;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.prompt-list .list-item .item-tags {
+    flex: 1;
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Second line: description */
+.prompt-list .list-item .item-description {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.library-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.library-footer .spacer {
+    flex: 1;
+}
+
+.secondary-btn.danger {
+    color: #f87171;
+}
+
+.secondary-btn.danger:hover {
+    background: rgba(248, 113, 113, 0.2);
+}
+
+/* Output display textarea */
+#output-display:focus {
+    box-shadow: inset 0 0 0 1px var(--primary-color);
 }
