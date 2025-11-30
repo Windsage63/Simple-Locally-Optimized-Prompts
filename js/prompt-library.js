@@ -208,54 +208,6 @@ ${promptData.body || ''}`.trim();
     }
 
     /**
-     * Update an existing prompt
-     * @param {number} id - Prompt ID
-     * @param {Object} updates - Fields to update { name, description, tags }
-     * @returns {Promise<void>}
-     */
-    async updatePrompt(id, updates) {
-        const prompt = await this.getPrompt(id);
-        if (!prompt) {
-            throw new Error('Prompt not found');
-        }
-
-        // Check for name conflicts if name is being changed
-        if (updates.name && updates.name !== prompt.name) {
-            const allPrompts = await this.getAllPrompts();
-            const conflict = allPrompts.find(p =>
-                p.id !== id && p.name.toLowerCase() === updates.name.toLowerCase()
-            );
-            if (conflict) {
-                throw new Error('A prompt with this name already exists');
-            }
-        }
-
-        // Update fields
-        if (updates.name !== undefined) prompt.name = updates.name;
-        if (updates.description !== undefined) prompt.description = updates.description;
-        if (updates.tags !== undefined) prompt.tags = updates.tags;
-        prompt.updated = Date.now();
-
-        // Rebuild content with updated frontmatter
-        const parsed = this.parseYamlFrontmatter(prompt.content);
-        prompt.content = this.buildContent({
-            name: prompt.name,
-            description: prompt.description,
-            tags: prompt.tags,
-            body: parsed.body
-        });
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.put(prompt);
-
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    /**
      * Delete a prompt by ID
      * @param {number} id - Prompt ID
      * @returns {Promise<void>}
@@ -269,46 +221,5 @@ ${promptData.body || ''}`.trim();
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-    }
-
-    /**
-     * Get all unique tags from all prompts
-     * @returns {Promise<Array<string>>}
-     */
-    async getAllTags() {
-        const prompts = await this.getAllPrompts();
-        const tagSet = new Set();
-
-        prompts.forEach(p => {
-            if (p.tags && Array.isArray(p.tags)) {
-                p.tags.forEach(t => tagSet.add(t));
-            }
-        });
-
-        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
-    }
-
-    /**
-     * Search prompts by name (case-insensitive substring match)
-     * @param {string} query - Search query
-     * @returns {Promise<Array>}
-     */
-    async searchByName(query) {
-        const prompts = await this.getAllPrompts();
-        const lowerQuery = query.toLowerCase();
-        return prompts.filter(p => p.name.toLowerCase().includes(lowerQuery));
-    }
-
-    /**
-     * Filter prompts by tag
-     * @param {string} tag - Tag to filter by
-     * @returns {Promise<Array>}
-     */
-    async filterByTag(tag) {
-        const prompts = await this.getAllPrompts();
-        const lowerTag = tag.toLowerCase().replace(/^#/, '');
-        return prompts.filter(p =>
-            p.tags && p.tags.some(t => t.toLowerCase() === lowerTag)
-        );
     }
 }

@@ -44,8 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatFetchModelsBtn = document.getElementById('chat-fetch-models-btn');
 
     // Prompt Settings Elements
-    // Prompt Settings Elements
-    // const customizePromptsBtn = document.getElementById('customize-prompts-btn'); // Removed
     const editOptimizePromptBtn = document.getElementById('edit-optimize-prompt-btn');
     const editRefinePromptBtn = document.getElementById('edit-refine-prompt-btn');
     const editRefineNoChatPromptBtn = document.getElementById('edit-refine-no-chat-prompt-btn');
@@ -626,10 +624,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function applyWordWrap(enabled) {
         if (enabled) {
-            outputDisplay.classList.add('wrap-code');
+            outputDisplay.classList.remove('no-wrap');
             promptInput.classList.remove('no-wrap');
         } else {
-            outputDisplay.classList.remove('wrap-code');
+            outputDisplay.classList.add('no-wrap');
             promptInput.classList.add('no-wrap');
         }
     }
