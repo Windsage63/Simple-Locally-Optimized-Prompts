@@ -341,10 +341,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        if (isStreaming) {
-            client.abort();
-            return;
-        }
+        // Note: isStreaming check removed here - streaming is handled by
+        // button onclick reassignment and Enter key handler above
 
         appendChatMessage('user', message);
         chatInput.value = '';
@@ -395,6 +393,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            // Ignore Enter key during streaming to prevent accidental double-sends
+            if (isStreaming) return;
             handleChat();
         }
     });
