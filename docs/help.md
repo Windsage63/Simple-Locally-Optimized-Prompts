@@ -43,9 +43,24 @@ Often, the first result is good but not perfect. Use the chat to improve it:
 
 ## 📦 Managing Prompts
 
-*   **Save to File**: Click the **Save** button to download the current prompt as a Markdown file.
-*   **Copy to Clipboard**: Click the **Copy** button to copy the prompt text.
-*   **History**: Click the **History** button to see your past sessions.
+### Prompt Library
+Save your best prompts to a persistent local library for easy access:
+
+1.  **Save to Library**: Click the **Bookmark** icon in the Output Panel to save the current prompt.
+    *   If a prompt with the same name exists, choose to overwrite or create a new version.
+2.  **Browse Library**: Click the **Book** icon to open the Prompt Library.
+    *   Filter prompts by name using the search box.
+    *   Select a prompt to see available actions.
+3.  **Library Actions**:
+    *   **Open**: Load a saved prompt into the Optimized Result panel.
+    *   **Download**: Export a prompt as a Markdown file.
+    *   **Delete**: Remove a prompt from the library.
+    *   **Import**: Add a Markdown prompt file to your library.
+
+### Quick Actions
+*   **Save to File**: Click the **Download** icon to save the current prompt as a Markdown file.
+*   **Copy to Clipboard**: Click the **Copy** icon to copy the prompt text.
+*   **History**: Click the **Clock** icon to see your past sessions.
 
 ## 🛠️ Advanced: Customizing the AI
 

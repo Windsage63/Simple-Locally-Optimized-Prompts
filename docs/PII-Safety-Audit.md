@@ -18,10 +18,11 @@ This comprehensive audit examined all source code, configuration, and documentat
 
 ## Audit Scope
 
-### Files Reviewed (9 files)
+### Files Reviewed (8 files)
 - **HTML:** `index.html`
-- **JavaScript:** `api.js`, `app.js`, `session-manager.js` 
-- **Libraries:** `marked.min.js`, `js-yaml.min.js`, `purify.min.js`
+- **JavaScript:** `api.js`, `app.js`, `session-manager.js`, `prompt-library.js`, `settings.js`
+- **Utilities:** `file-utils.js`, `modal-manager.js`
+- **Libraries:** `js-yaml.min.js`
 - **Documentation:** `README.md`, `PII-Safety-Audit.md`
 - **Assets:** Font files, CSS files (local copies)
 
@@ -49,8 +50,8 @@ This comprehensive audit examined all source code, configuration, and documentat
 ### 2. Data Storage & Privacy ✅
 
 **Local Storage Only:**
-- All data stored exclusively in browser `localStorage` and `sessionStorage`
-- **Storage Keys (Namespaced):**
+- All data stored exclusively in browser `localStorage`, `sessionStorage`, and `IndexedDB`
+- **LocalStorage Keys (Namespaced):**
   - `slop_api_url` - User's API endpoint (Optimize/Refine)
   - `slop_model_name` - Model selection (Optimize/Refine)
   - `slop_api_key` - Optional API key (Optimize/Refine, user controlled)
@@ -65,6 +66,9 @@ This comprehensive audit examined all source code, configuration, and documentat
   - `slop_prompt_refine_no_chat` - Custom refine (no chat) system prompt
   - `slop_word_wrap` - UI preference
   - `chatHeightPercentage` - UI preference
+- **IndexedDB Database:**
+  - `slop_prompt_library` - Persistent storage for saved prompts (Prompt Library feature)
+    - Object store: `prompts` with indexes on `name`, `tags`, `created`, `updated`
 
 **No Server-Side Storage:**
 - Zero external data transmission (except to user-configured LLM endpoint)
@@ -95,25 +99,34 @@ All `fetch()` calls target user-provided endpoints:
 
 ### 4. XSS & Injection Protection ✅
 
-**Output Sanitization:**
-- Uses **DOMPurify** (v3.0.8) to sanitize all markdown renders
-- Markdown parsed with **Marked.js** then sanitized before `innerHTML` insertion
+**Output Handling:**
+- The optimized result is displayed in a `<textarea>` element using `.value` assignment
+- Textarea value assignment is inherently safe against XSS (content is always treated as text, never parsed as HTML)
+- No markdown rendering or HTML injection possible in the output display
+
+**Input Sanitization:**
+- User-provided HTML in UI lists is escaped via `escapeHtml()` function before insertion
 - YAML parsing size-limited (50,000 char max) to prevent DoS
 
 **Code Review:**
 ```javascript
 // app.js renderOutput function
-function renderOutput(markdown) {
-    const rawHtml = marked.parse(markdown);
-    const cleanHtml = DOMPurify.sanitize(rawHtml);  // ✅ Sanitization
-    outputDisplay.innerHTML = cleanHtml;
+function renderOutput(text) {
+    outputDisplay.value = text;  // ✅ Safe - textarea value assignment
+}
+
+// file-utils.js escapeHtml function
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;  // ✅ Safe text node creation
+    return div.innerHTML;
 }
 ```
 
 **Safe Practices:**
 - ✅ No use of `eval()` or `Function()` constructors
-- ✅ All HTML insertions sanitized via DOMPurify
-- ✅ User input escaped before display
+- ✅ Output display uses textarea `.value` (inherently safe)
+- ✅ User input escaped via `escapeHtml()` before display in lists
 - ✅ YAML parsing wrapped in try-catch with size limits
 
 ### 5. Streaming & Request Handling ✅
@@ -152,18 +165,17 @@ async *parseSSEStream(response) {
 **innerHTML Usage Audit:**
 All `innerHTML` assignments in `app.js` were reviewed:
 - ✅ `chatHistoryDiv.innerHTML` - Static trusted HTML strings only
-- ✅ `outputDisplay.innerHTML` - Always sanitized via DOMPurify
-- ✅ `sessionsList.innerHTML` - Static HTML or empty string
+- ✅ `outputDisplay` - Uses `.value` assignment (textarea, not innerHTML)
+- ✅ `sessionsList.innerHTML` - Static HTML or escaped user content via `escapeHtml()`
+- ✅ `libraryPromptList.innerHTML` - Escaped user content via `escapeHtml()`
 - ✅ Button icon updates - Static Font Awesome icons only
 
 ### 6. Third-Party Dependencies ✅
 
 **All Libraries Locally Hosted:**
-- ✅ **Marked.js** - Markdown parser (local copy)
-- ✅ **JS-YAML** - YAML parser (local copy)
-- ✅ **DOMPurify** - HTML sanitizer (local copy)
-- ✅ **Font Awesome** - Icons (local copy)
-- ✅ **Google Fonts** - Typography (local copy)
+- ✅ **JS-YAML** - YAML parser (local copy in js/lib/)
+- ✅ **Font Awesome** - Icons (local copy in css/)
+- ✅ **Google Fonts** - Typography (local copy in css/)
 
 **No CDN Dependencies:**
 - Zero external script loading
@@ -232,8 +244,8 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 | Security Category | Status | Notes |
 |-------------------|--------|-------|
 | PII/Credentials | ✅ Pass | No hardcoded secrets or PII |
-| Data Privacy | ✅ Pass | Local storage only, no tracking |
-| XSS Protection | ✅ Pass | DOMPurify sanitization implemented |
+| Data Privacy | ✅ Pass | Local storage only (localStorage + IndexedDB), no tracking |
+| XSS Protection | ✅ Pass | Textarea value assignment + escapeHtml() for lists |
 | Dependency Security | ✅ Pass | All libraries local, no CDN |
 | Network Security | ✅ Pass | User-controlled endpoints only |
 | Documentation | ✅ Pass | Privacy policy and storage clearly documented |
@@ -251,10 +263,11 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 - No cleanup required before publishing
 
 ✅ **Security Best Practices**
-- Sanitize all user-generated content
+- Output display uses textarea (inherently XSS-safe)
+- User content escaped via `escapeHtml()` for list displays
 - Local-first architecture
 - Explicit user consent for data persistence
-- Defense-in-depth approach (DOMPurify + size limits)
+- Defense-in-depth approach (escapeHtml + size limits)
 
 ### For Customers
 
@@ -281,8 +294,7 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 **Optional Enhancements (Future):**
 1. Consider adding Content Security Policy (CSP) meta tags to HTML
 2. Add Subresource Integrity (SRI) hashes for local libraries
-3. Consider IndexedDB for larger session storage (localStorage has 5-10MB limits)
-4. Add export/import functionality for sessions (backup/restore)
+3. Add export/import functionality for full session backup/restore
 
 ### Repository Publishing: ✅ SAFE
 
@@ -305,7 +317,7 @@ This codebase has been thoroughly reviewed and contains:
 - ❌ No API keys or credentials
 - ❌ No hardcoded secrets
 - ❌ No external tracking or analytics
-- ✅ Comprehensive XSS protections
+- ✅ XSS-safe output handling (textarea value assignment)
 - ✅ Privacy-first architecture
 - ✅ Secure streaming implementation with AbortController
 - ✅ Proper request cancellation and resource cleanup

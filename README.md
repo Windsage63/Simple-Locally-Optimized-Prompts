@@ -10,14 +10,15 @@
 ## ✨ Features
 
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
-- **Secure & Offline-Ready**: All libraries (Marked, JS-YAML, DOMPurify) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
+- **Secure & Offline-Ready**: All libraries (JS-YAML) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
+- **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, refinement (with chat), and refinement (without chat). This allows the system to be used for many similar workflows where discussion and incremental revision are beneficial.
+- **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use one powerful model for prompt generation and refinement, while a different model critiques and analyzes the output.
 - **Real-Time Streaming**: See results as they generate with live streaming output. Cancel any operation mid-stream with the Stop button.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
-- **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use a powerful model for prompt generation while a different model critiques and analyzes the output.
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
 - **Flexible Refinement**: Use the "Include Chat" toggle to refine prompts with or without chat context. Refine based on updated input text alone, or incorporate the full chat discussion.
 - **Session Management**: Save and restore multiple prompt engineering sessions to keep your work organized.
-- **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, refinement (with chat), and refinement (without chat).
+- **Prompt Library**: Save your favorite optimized prompts to a persistent local library (IndexedDB). Filter by name, import/export prompts as Markdown files, and quickly load saved prompts into your workspace.
 - **Resizable UI**: Adjust the split between the input area and chat window using the draggable resize handle, allowing you to customize your workspace layout.
 - **Result History**: Navigate through previous versions of your optimized prompt to compare results.
 - **Intelligent Saving**: Downloads your prompt as a Markdown file with a meaningful filename derived automatically from the prompt's name.
@@ -25,7 +26,7 @@
 
 ## 🛠️ Prerequisites
 
-You need a local LLM server running that is compatible with the OpenAI API format.
+You need an LLM API connection or a local LLM server running that is compatible with the OpenAI API format.
 
 - **[LM Studio](https://lmstudio.ai/)** (Recommended):
   - Start the Local Server.
@@ -94,13 +95,15 @@ You need a local LLM server running that is compatible with the OpenAI API forma
 All stored information (API settings, chat history, and optimization results) is **only stored in your browser’s local storage (localStorage/sessionStorage)**. This data persists through page reloads for your convenience, but can easily be erased at any time by clearing the site data for this site in your browser's settings.
 - **API Keys**: You have full control over API key storage. Choose to save it persistently or keep it in session memory only. Both the Optimize/Refine API and Chat Assistant API have independent key storage options.
 - **Key Storage**: Keys saved persistently are stored client-side in localStorage. Keys stored in localStorage are not encrypted and are accessible to scripts running in the same browser origin. Keys saved in session memory are stored only for the current browser session (in memory or sessionStorage) and are cleared when the page is reloaded or the tab is closed.
-- **Stored Data**: Settings are stored with namespaced keys (`slop_api_url`, `slop_model_name`, `slop_api_key` for Optimize/Refine; `slop_chat_api_url`, `slop_chat_model_name`, `slop_chat_api_key` for Chat Assistant; plus session data and UI preferences).
+- **Stored Data**: Settings are stored with namespaced keys for Optimize/Refine; for Chat Assistant; plus session data and UI preferences.
 - **No Tracking**: No information is ever sent to external servers except your configured LLM endpoint(s).
 
 ## 🔧 Troubleshooting
 
 - **"API Error" or No Response**:
   - Ensure your local server is running.
+  - Verify the API Endpoint URL and Model Name are correct in Settings.
+  - If using an external API, ensure your API Key is valid.
   - Check the Console (F12) for CORS errors. If you see CORS issues, ensure your local server allows connections from `null` (file origin) or your local server address.
 - **Settings Button Not Working**:
   - Refresh the page. Ensure JavaScript is enabled.
@@ -112,4 +115,4 @@ MIT
 ## 🛡️ PII Safety Audit
 
 - [PII Safety Audit](PII-Safety-Audit.md)
-- Using localhost, this app does not access the internet, and does not collect any data.
+- When using localhost, this app does not access the internet, and does not collect any data.

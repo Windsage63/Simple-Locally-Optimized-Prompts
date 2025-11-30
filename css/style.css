@@ -43,7 +43,7 @@ body {
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
-    height: 60px;
+    height: 73px;
 }
 
 .logo {
