@@ -1,9 +1,18 @@
 // LLMClient is now available globally via api.js
 // SessionManager is now available globally via session-manager.js
+// PromptLibrary is now available globally via prompt-library.js
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const client = new LLMClient();
     const sessionManager = new SessionManager();
+    const promptLibrary = new PromptLibrary();
+
+    // Initialize the prompt library database
+    try {
+        await promptLibrary.open();
+    } catch (error) {
+        console.error('Failed to initialize prompt library:', error);
+    }
 
     // UI Elements
     const promptInput = document.getElementById('prompt-input');
@@ -72,6 +81,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyModal = document.getElementById('history-modal');
     const closeHistoryBtn = document.getElementById('close-history');
     const sessionsList = document.getElementById('sessions-list');
+
+    // Library UI Elements
+    const librarySaveBtn = document.getElementById('library-save-btn');
+    const libraryBtn = document.getElementById('library-btn');
+    const libraryModal = document.getElementById('library-modal');
+    const closeLibraryBtn = document.getElementById('close-library');
+    const libraryNameFilter = document.getElementById('library-name-filter');
+    const libraryPromptList = document.getElementById('library-prompt-list');
+    const libraryImportBtn = document.getElementById('library-import-btn');
+    const importFileInput = document.getElementById('import-file-input');
+    const libraryDeleteBtn = document.getElementById('library-delete-btn');
+    const libraryDownloadBtn = document.getElementById('library-download-btn');
+    const libraryOpenBtn = document.getElementById('library-open-btn');
+
+    // Library state
+    let selectedPromptId = null;
+    let allLibraryPrompts = [];
 
     // Initialize Settings UI
     apiUrlInput.value = client.baseUrl;
@@ -150,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderOutput(resultHistory[currentHistoryIndex]);
             updateHistoryUI();
         } else {
-            outputDisplay.innerHTML = '';
+            outputDisplay.value = '';
             historyNav.classList.add('hidden');
         }
     }
@@ -168,6 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize
     loadCurrentSession();
+
+    // Sync output edits back to result history
+    outputDisplay.addEventListener('input', () => {
+        if (currentHistoryIndex >= 0 && resultHistory[currentHistoryIndex] !== undefined) {
+            // Get text from the textarea
+            resultHistory[currentHistoryIndex] = outputDisplay.value;
+            saveState();
+        }
+    });
 
 
     // --- Event Listeners ---
@@ -187,11 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
         setLoading(true, 'optimize');
-        outputDisplay.innerHTML = ''; // Clear output before streaming
+        outputDisplay.value = ''; // Clear output before streaming
         let fullResult = '';
+        let streamStarted = false;
 
         try {
             for await (const chunk of client.optimizePromptStream(text)) {
+                if (!streamStarted) {
+                    streamStarted = true;
+                    loadingOverlay.classList.add('hidden'); // Hide spinner once text starts
+                }
                 fullResult += chunk;
                 scheduleRender(fullResult);
             }
@@ -216,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     refineBtn.addEventListener('click', async () => {
         const originalText = promptInput.value.trim();
-        const currentOutput = outputDisplay.innerText;
+        const currentOutput = outputDisplay.value;
         const includeChat = document.getElementById('include-chat').checked;
 
         if (!originalText || !currentOutput) {
@@ -236,8 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setLoading(true, 'refine');
-        outputDisplay.innerHTML = ''; // Clear output before streaming
+        outputDisplay.value = ''; // Clear output before streaming
         let fullResult = '';
+        let streamStarted = false;
 
         try {
             const stream = includeChat
@@ -245,6 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 : client.noChatRefinePromptStream(originalText, currentOutput);
 
             for await (const chunk of stream) {
+                if (!streamStarted) {
+                    streamStarted = true;
+                    loadingOverlay.classList.add('hidden'); // Hide spinner once text starts
+                }
                 fullResult += chunk;
                 scheduleRender(fullResult);
             }
@@ -446,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     copyBtn.addEventListener('click', () => {
-        const content = outputDisplay.innerText;
+        const content = outputDisplay.value;
         if (content) {
             navigator.clipboard.writeText(content);
             const originalIcon = copyBtn.innerHTML;
@@ -863,12 +908,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderOutput(markdown) {
-        // Use marked to parse markdown
-        const rawHtml = marked.parse(markdown);
-        // Sanitize with DOMPurify
-        const cleanHtml = DOMPurify.sanitize(rawHtml);
-        outputDisplay.innerHTML = cleanHtml;
+    function renderOutput(text) {
+        // Output is now a textarea, just set the value directly
+        outputDisplay.value = text;
     }
 
     // ===== RESIZE HANDLE LOGIC =====
@@ -954,5 +996,227 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
         }
+    });
+
+    // ===== PROMPT LIBRARY LOGIC =====
+
+    // Render prompt list in library modal
+    async function renderLibraryPromptList(filter = '') {
+        allLibraryPrompts = await promptLibrary.getAllPrompts();
+        const lowerFilter = filter.toLowerCase();
+
+        // Apply name filter
+        let filtered = allLibraryPrompts;
+        if (lowerFilter) {
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(lowerFilter));
+        }
+
+        // Sort by updated date (newest first)
+        filtered.sort((a, b) => b.updated - a.updated);
+
+        libraryPromptList.innerHTML = '';
+
+        filtered.forEach(prompt => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            if (prompt.id === selectedPromptId) {
+                li.classList.add('selected');
+            }
+            li.dataset.id = prompt.id;
+            const tagsDisplay = (prompt.tags || []).map(t => '#' + t).join(', ');
+            li.innerHTML = `
+                <div class="item-header">
+                    <div class="item-name">${escapeHtml(prompt.name)}</div>
+                    <div class="item-tags">${escapeHtml(tagsDisplay)}</div>
+                </div>
+                <div class="item-description">${escapeHtml(prompt.description || 'No description')}</div>
+            `;
+            li.addEventListener('click', () => selectLibraryPrompt(prompt.id));
+            libraryPromptList.appendChild(li);
+        });
+    }
+
+    // Select a prompt in the list
+    async function selectLibraryPrompt(id) {
+        selectedPromptId = id;
+
+        // Update selection in list
+        libraryPromptList.querySelectorAll('.list-item').forEach(li => {
+            li.classList.toggle('selected', parseInt(li.dataset.id) === id);
+        });
+    }
+
+    // Clear library selection
+    function clearLibrarySelection() {
+        selectedPromptId = null;
+    }
+
+    // Escape HTML for safe display
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Quick Save to Library - with user choice for duplicates
+    librarySaveBtn.addEventListener('click', async () => {
+        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
+            alert('No prompt to save!');
+            return;
+        }
+
+        const content = resultHistory[currentHistoryIndex];
+        const parsed = promptLibrary.parseYamlFrontmatter(content);
+        const baseName = parsed.name;
+
+        // Check if name already exists
+        const allPrompts = await promptLibrary.getAllPrompts();
+        const existing = allPrompts.find(p => p.name.toLowerCase() === baseName.toLowerCase());
+
+        if (existing) {
+            const choice = confirm(`A prompt named "${baseName}" already exists.\n\nClick OK to overwrite, or Cancel to keep both (will add a number).`);
+
+            if (choice) {
+                // Overwrite - delete existing and save new
+                try {
+                    await promptLibrary.deletePrompt(existing.id);
+                    await promptLibrary.savePrompt(content, false);
+                    alert('Prompt overwritten in library!');
+                } catch (error) {
+                    alert('Failed to save prompt: ' + error.message);
+                }
+            } else {
+                // Keep both - auto-generate unique name
+                try {
+                    await promptLibrary.savePrompt(content, true);
+                    alert('Prompt saved to library with new name!');
+                } catch (error) {
+                    alert('Failed to save prompt: ' + error.message);
+                }
+            }
+        } else {
+            // No conflict, save normally
+            try {
+                await promptLibrary.savePrompt(content, false);
+                alert('Prompt saved to library!');
+            } catch (error) {
+                alert('Failed to save prompt: ' + error.message);
+            }
+        }
+    });
+
+    // Open Library Modal
+    libraryBtn.addEventListener('click', async () => {
+        clearLibrarySelection();
+        libraryNameFilter.value = '';
+
+        await renderLibraryPromptList();
+
+        libraryModal.classList.remove('hidden');
+    });
+
+    // Close Library Modal
+    closeLibraryBtn.addEventListener('click', () => {
+        libraryModal.classList.add('hidden');
+    });
+
+    libraryModal.addEventListener('click', (e) => {
+        if (e.target === libraryModal) {
+            libraryModal.classList.add('hidden');
+        }
+    });
+
+    // Filter prompts by name
+    libraryNameFilter.addEventListener('input', () => {
+        renderLibraryPromptList(libraryNameFilter.value);
+    });
+
+    // Delete selected prompt
+    libraryDeleteBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
+        }
+
+        if (!confirm('Delete this prompt?')) {
+            return;
+        }
+
+        try {
+            await promptLibrary.deletePrompt(selectedPromptId);
+            clearLibrarySelection();
+            await renderLibraryPromptList(libraryNameFilter.value);
+        } catch (error) {
+            alert('Failed to delete prompt: ' + error.message);
+        }
+    });
+
+    // Download selected prompt
+    libraryDownloadBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
+        }
+
+        const prompt = await promptLibrary.getPrompt(selectedPromptId);
+        if (!prompt) return;
+
+        const filename = prompt.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
+        const blob = new Blob([prompt.content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Open selected prompt in main view
+    libraryOpenBtn.addEventListener('click', async () => {
+        if (!selectedPromptId) {
+            alert('No prompt selected!');
+            return;
+        }
+
+        const prompt = await promptLibrary.getPrompt(selectedPromptId);
+        if (!prompt) return;
+
+        // Load content directly into output display (now a textarea)
+        outputDisplay.value = prompt.content;
+
+        // Add to result history
+        addToHistory(prompt.content);
+        saveState();
+
+        libraryModal.classList.add('hidden');
+    });
+
+    // Import from file
+    libraryImportBtn.addEventListener('click', () => {
+        importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const content = event.target.result;
+
+            try {
+                await promptLibrary.savePrompt(content, true);
+                alert('Prompt imported!');
+                await renderLibraryPromptList(libraryNameFilter.value);
+            } catch (error) {
+                alert('Failed to import prompt: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input so same file can be selected again
+        importFileInput.value = '';
     });
 });

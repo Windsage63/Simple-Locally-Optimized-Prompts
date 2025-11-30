@@ -118,9 +118,8 @@ The input will be freeform writing, but your output must be in markdown and YAML
 
 1. Analyze the user's freeform request to understand their goal.
 2. Construct a professional prompt based on their request.
-3. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
+3. Format the output with YAML frontmatter followed by the refined prompt content.
    Format:
-   \`\`\`markdown
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
@@ -133,9 +132,8 @@ The input will be freeform writing, but your output must be in markdown and YAML
    # Instructions:
 
    [Refined Prompt Content]
-   \`\`\`
 4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag".
-5. Do NOT add any other conversational text. Return ONLY the code block.
+5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `,
         chat: `# Objective
 
@@ -187,9 +185,8 @@ Your task is to incrementally REFINE the Current Optimized Prompt based on the u
 1. Analyze the chat history to understand what changes the user wants.
 2. Compare the new desires and changes to the existing "Current Optimized Prompt"
 3. Construct an updated professional prompt, incorporating the new changes to incrementally incorporate these new ideas.
-4. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
- Format:
-   \`\`\`markdown
+4. Format the output with YAML frontmatter followed by the refined prompt content.
+   Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
@@ -202,9 +199,8 @@ Your task is to incrementally REFINE the Current Optimized Prompt based on the u
    # Instructions:
 
    [Refined Prompt Content]
-   \`\`\`
 5. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-6. Do NOT add any other conversational text. Return ONLY the code block.
+6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `,
         refine_no_chat: `# Objective:
 
@@ -223,9 +219,8 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
 
 1. Compare the Updated User Idea with the Current Optimized Prompt.
 2. Adjust the prompt to better match the new requirements in the User Idea.
-3. Format the output as a Markdown code block containing the YAML frontmatter and the refined prompt.
- Format:
-   \`\`\`markdown
+3. Format the output with YAML frontmatter followed by the refined prompt content.
+   Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
@@ -238,9 +233,8 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
    # Instructions:
 
    [Refined Prompt Content]
-   \`\`\`
 4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-5. Do NOT add any other conversational text. Return ONLY the code block.
+5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `
     };
 
