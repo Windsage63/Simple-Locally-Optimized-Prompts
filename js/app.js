@@ -447,10 +447,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const content = resultHistory[currentHistoryIndex];
         let filename = 'optimized-prompt.md';
 
-        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '').trim();
-
         try {
-            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
+            const match = content.match(/---\s*([\s\S]*?)\s*---/);
             if (match) {
                 const yamlText = match[1];
                 if (yamlText.length <= 50000) {
@@ -464,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Failed to parse YAML for filename:", e);
         }
 
-        downloadFile(cleanContent, filename);
+        downloadFile(content, filename);
     });
 
     // --- History Modal ---
@@ -555,11 +553,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 li.classList.add('selected');
             }
             li.dataset.id = prompt.id;
-            const tagsDisplay = (prompt.tags || []).map(t => '#' + t).join(', ');
             li.innerHTML = `
                 <div class="item-header">
                     <div class="item-name">${escapeHtml(prompt.name)}</div>
-                    <div class="item-tags">${escapeHtml(tagsDisplay)}</div>
                 </div>
                 <div class="item-description">${escapeHtml(prompt.description || 'No description')}</div>
             `;

@@ -124,16 +124,17 @@ The input will be freeform writing, but your output must be in markdown and YAML
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+   # Role
+
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
 
    [Refined Prompt Content]
-4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag".
-5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
+
+4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `,
         chat: `# Objective
 
@@ -191,16 +192,17 @@ Your task is to incrementally REFINE the Current Optimized Prompt based on the u
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+    # Role
+
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
 
    [Refined Prompt Content]
-5. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
+
+5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `,
         refine_no_chat: `# Objective:
 
@@ -217,24 +219,25 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
 
 ## Instructions:
 
-1. Compare the Updated User Idea with the Current Optimized Prompt.
-2. Adjust the prompt to better match the new requirements in the User Idea.
+1. Analize the differences between the Updated User Idea and the "Current Optimized Prompt."
+2. Craft an updated professionally engineered prompt that incrementally incorporates the ideas and intent this analysis.
 3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+    # Role
 
-   [Refined Prompt Content]
-4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
+
+   [Updated Refined Prompt Content]
+
+4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `
     };
 
@@ -619,7 +622,7 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
             .replace('{{originalPrompt}}', originalPrompt)
             .replace('{{currentResult}}', currentResult);
 
-        const messages = [{ role: "system", content: systemPrompt }];
+        const messages = [{ role: "user", content: systemPrompt }];
 
         const headers = { 'Content-Type': 'application/json' };
         if (this.apiKey) {
