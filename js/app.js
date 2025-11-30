@@ -311,6 +311,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             flushRender();
             addToHistory(fullResult);
+            
+            // Reset chat for the new refined prompt - clean slate
+            client.history = [];
+            chatHistoryDiv.innerHTML = '<div class="chat-message system"><p><i class="fa-solid fa-rotate-right"></i> Prompt refined. Chat reset for fresh context.</p></div>';
+            
             saveState();
         } catch (error) {
             flushRender();
@@ -341,8 +346,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        // Note: isStreaming check removed here - streaming is handled by
-        // button onclick reassignment and Enter key handler above
+        // Safety guard - prevent double-sends during streaming
+        if (isStreaming) return;
 
         appendChatMessage('user', message);
         chatInput.value = '';
@@ -388,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    sendChatBtn.addEventListener('click', handleChat);
+    sendChatBtn.onclick = handleChat;
 
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
