@@ -1,86 +1,52 @@
-// LLMClient is now available globally via api.js
-// SessionManager is now available globally via session-manager.js
-// PromptLibrary is now available globally via prompt-library.js
+/**
+ * SLOP - Simple Locally Optimized Prompts
+ * Main Application Orchestrator
+ */
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize core services
     const client = new LLMClient();
     const sessionManager = new SessionManager();
     const promptLibrary = new PromptLibrary();
 
-    // Initialize the prompt library database
+    // Initialize prompt library database
     try {
         await promptLibrary.open();
     } catch (error) {
         console.error('Failed to initialize prompt library:', error);
     }
 
-    // UI Elements
+    // Initialize settings (from settings.js)
+    initSettings(client);
+
+    // --- Core UI Elements ---
     const promptInput = document.getElementById('prompt-input');
     const outputDisplay = document.getElementById('output-display');
     const optimizeBtn = document.getElementById('optimize-btn');
-    const newChatBtn = document.getElementById('new-chat-btn'); // Renamed from clear-btn
+    const refineBtn = document.getElementById('refine-btn');
+    const newChatBtn = document.getElementById('new-chat-btn');
     const copyBtn = document.getElementById('copy-btn');
-    const savePromptBtn = document.getElementById('save-prompt-btn'); // New
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettingsBtn = document.getElementById('close-settings');
-    const saveSettingsBtn = document.getElementById('save-settings');
-    const apiUrlInput = document.getElementById('api-url');
-    const modelNameInput = document.getElementById('model-name');
+    const savePromptBtn = document.getElementById('save-prompt-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
-    const fetchModelsBtn = document.getElementById('fetch-models-btn');
-    const modelSelect = document.getElementById('model-select');
-    const apiKeyInput = document.getElementById('api-key');
-    const saveKeyCheckbox = document.getElementById('save-key');
-    const keySavedBadge = document.getElementById('key-saved-badge');
 
-    // Chat API Settings Elements
-    const chatApiUrlInput = document.getElementById('chat-api-url');
-    const chatApiKeyInput = document.getElementById('chat-api-key');
-    const chatModelNameInput = document.getElementById('chat-model-name');
-    const chatModelSelect = document.getElementById('chat-model-select');
-    const chatSaveKeyCheckbox = document.getElementById('chat-save-key');
-    const chatKeySavedBadge = document.getElementById('chat-key-saved-badge');
-    const chatFetchModelsBtn = document.getElementById('chat-fetch-models-btn');
+    // Chat Elements
+    const chatInput = document.getElementById('chat-input');
+    const sendChatBtn = document.getElementById('send-chat-btn');
+    const chatHistoryDiv = document.getElementById('chat-history');
 
-    // Prompt Settings Elements
-    const editOptimizePromptBtn = document.getElementById('edit-optimize-prompt-btn');
-    const editRefinePromptBtn = document.getElementById('edit-refine-prompt-btn');
-    const editRefineNoChatPromptBtn = document.getElementById('edit-refine-no-chat-prompt-btn');
-    const editChatPromptBtn = document.getElementById('edit-chat-prompt-btn');
+    // History Navigation
+    const historyNav = document.getElementById('history-nav');
+    const prevResultBtn = document.getElementById('prev-result');
+    const nextResultBtn = document.getElementById('next-result');
+    const historyCounter = document.getElementById('history-counter');
 
-    const promptSettingsModal = document.getElementById('prompt-settings-modal');
-    const closePromptSettingsBtn = document.getElementById('close-prompt-settings');
-
-    // Sections
-    const sectionOptimize = document.getElementById('section-optimize');
-    const sectionRefine = document.getElementById('section-refine');
-    const sectionRefineNoChat = document.getElementById('section-refine-no-chat');
-    const sectionChat = document.getElementById('section-chat');
-
-    const optimizePromptInput = document.getElementById('optimize-prompt-input');
-    const saveOptimizePromptBtn = document.getElementById('save-optimize-prompt');
-    const resetOptimizePromptBtn = document.getElementById('reset-optimize-prompt');
-
-    const chatPromptInput = document.getElementById('chat-prompt-input');
-    const saveChatPromptBtn = document.getElementById('save-chat-prompt');
-    const resetChatPromptBtn = document.getElementById('reset-chat-prompt');
-
-    const refinePromptInput = document.getElementById('refine-prompt-input');
-    const saveRefinePromptBtn = document.getElementById('save-refine-prompt');
-    const resetRefinePromptBtn = document.getElementById('reset-refine-prompt');
-
-    const refineNoChatPromptInput = document.getElementById('refine-no-chat-prompt-input');
-    const saveRefineNoChatPromptBtn = document.getElementById('save-refine-no-chat-prompt');
-    const resetRefineNoChatPromptBtn = document.getElementById('reset-refine-no-chat-prompt');
-
-    // History UI Elements
+    // History Modal Elements
     const historyBtn = document.getElementById('history-btn');
     const historyModal = document.getElementById('history-modal');
     const closeHistoryBtn = document.getElementById('close-history');
     const sessionsList = document.getElementById('sessions-list');
 
-    // Library UI Elements
+    // Library Modal Elements
     const librarySaveBtn = document.getElementById('library-save-btn');
     const libraryBtn = document.getElementById('library-btn');
     const libraryModal = document.getElementById('library-modal');
@@ -93,29 +59,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const libraryDownloadBtn = document.getElementById('library-download-btn');
     const libraryOpenBtn = document.getElementById('library-open-btn');
 
-    // Library state
-    let selectedPromptId = null;
-    let allLibraryPrompts = [];
-
-    // Initialize Settings UI
-    apiUrlInput.value = client.baseUrl;
-    modelNameInput.value = client.model;
-
-    // Chat Elements
-    const chatInput = document.getElementById('chat-input');
-    const sendChatBtn = document.getElementById('send-chat-btn');
-    const chatHistoryDiv = document.getElementById('chat-history');
-    const refineBtn = document.getElementById('refine-btn');
-    const historyNav = document.getElementById('history-nav');
-    const prevResultBtn = document.getElementById('prev-result');
-    const nextResultBtn = document.getElementById('next-result');
-    const historyCounter = document.getElementById('history-counter');
-
-    // State
+    // --- Application State ---
     let resultHistory = [];
     let currentHistoryIndex = -1;
     let currentSession = null;
     let isStreaming = false;
+    let selectedPromptId = null;
 
     // Throttled rendering for streaming output
     let renderTimeout = null;
@@ -127,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTimeout = setTimeout(() => {
                 renderOutput(pendingContent);
                 renderTimeout = null;
-            }, 50); // Render at most every 50ms
+            }, 50);
         }
     }
 
@@ -140,6 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderOutput(pendingContent);
             pendingContent = '';
         }
+    }
+
+    function renderOutput(text) {
+        outputDisplay.value = text;
     }
 
     // --- Session Management ---
@@ -190,37 +143,102 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessionManager.saveSession(currentSession);
     }
 
-    // Initialize
+    // Initialize session
     loadCurrentSession();
 
-    // Sync output edits back to result history
-    outputDisplay.addEventListener('input', () => {
-        if (currentHistoryIndex >= 0 && resultHistory[currentHistoryIndex] !== undefined) {
-            // Get text from the textarea
-            resultHistory[currentHistoryIndex] = outputDisplay.value;
+    // --- History Navigation ---
+
+    function addToHistory(result) {
+        if (currentHistoryIndex < resultHistory.length - 1) {
+            resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
+        }
+        resultHistory.push(result);
+        currentHistoryIndex = resultHistory.length - 1;
+        updateHistoryUI();
+        renderOutput(result);
+    }
+
+    function updateHistoryUI() {
+        if (resultHistory.length > 1) {
+            historyNav.classList.remove('hidden');
+            historyCounter.textContent = `${currentHistoryIndex + 1} / ${resultHistory.length}`;
+            prevResultBtn.disabled = currentHistoryIndex === 0;
+            nextResultBtn.disabled = currentHistoryIndex === resultHistory.length - 1;
+            prevResultBtn.style.opacity = prevResultBtn.disabled ? '0.5' : '1';
+            nextResultBtn.style.opacity = nextResultBtn.disabled ? '0.5' : '1';
+        } else {
+            historyNav.classList.add('hidden');
+        }
+    }
+
+    prevResultBtn.addEventListener('click', () => {
+        if (currentHistoryIndex > 0) {
+            currentHistoryIndex--;
+            renderOutput(resultHistory[currentHistoryIndex]);
+            updateHistoryUI();
             saveState();
         }
     });
 
+    nextResultBtn.addEventListener('click', () => {
+        if (currentHistoryIndex < resultHistory.length - 1) {
+            currentHistoryIndex++;
+            renderOutput(resultHistory[currentHistoryIndex]);
+            updateHistoryUI();
+            saveState();
+        }
+    });
 
-    // --- Event Listeners ---
+    // --- Loading State ---
+
+    const optimizeBtnOriginalHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Optimize';
+    const refineBtnOriginalHTML = '<i class="fa-solid fa-rotate-right"></i> Refine';
+    const stopBtnHTML = '<i class="fa-solid fa-stop"></i> Stop';
+
+    function setLoading(loading, mode = null) {
+        isStreaming = loading;
+
+        if (loading) {
+            loadingOverlay.classList.remove('hidden');
+            if (mode === 'optimize') {
+                optimizeBtn.innerHTML = stopBtnHTML;
+                optimizeBtn.classList.add('stop-btn');
+                refineBtn.disabled = true;
+            } else if (mode === 'refine') {
+                refineBtn.innerHTML = stopBtnHTML;
+                refineBtn.classList.add('stop-btn');
+                optimizeBtn.disabled = true;
+            } else {
+                optimizeBtn.disabled = true;
+                refineBtn.disabled = true;
+            }
+        } else {
+            loadingOverlay.classList.add('hidden');
+            optimizeBtn.innerHTML = optimizeBtnOriginalHTML;
+            optimizeBtn.classList.remove('stop-btn');
+            optimizeBtn.disabled = false;
+            refineBtn.innerHTML = refineBtnOriginalHTML;
+            refineBtn.classList.remove('stop-btn');
+            refineBtn.disabled = false;
+        }
+    }
+
+    // --- Optimize Handler ---
 
     optimizeBtn.addEventListener('click', async () => {
         const text = promptInput.value.trim();
         if (!text) return;
 
-        // If already streaming, abort
         if (isStreaming) {
             client.abort();
             return;
         }
 
-        // Reset chat history on new optimization
         client.history = [];
         chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
 
         setLoading(true, 'optimize');
-        outputDisplay.value = ''; // Clear output before streaming
+        outputDisplay.value = '';
         let fullResult = '';
         let streamStarted = false;
 
@@ -228,7 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for await (const chunk of client.optimizePromptStream(text)) {
                 if (!streamStarted) {
                     streamStarted = true;
-                    loadingOverlay.classList.add('hidden'); // Hide spinner once text starts
+                    loadingOverlay.classList.add('hidden');
                 }
                 fullResult += chunk;
                 scheduleRender(fullResult);
@@ -239,7 +257,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             flushRender();
             if (error.name === 'AbortError') {
-                // User cancelled - keep partial result if any
                 if (fullResult) {
                     addToHistory(fullResult);
                     saveState();
@@ -252,6 +269,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // --- Refine Handler ---
+
     refineBtn.addEventListener('click', async () => {
         const originalText = promptInput.value.trim();
         const currentOutput = outputDisplay.value;
@@ -262,7 +281,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // If already streaming, abort
         if (isStreaming) {
             client.abort();
             return;
@@ -274,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setLoading(true, 'refine');
-        outputDisplay.value = ''; // Clear output before streaming
+        outputDisplay.value = '';
         let fullResult = '';
         let streamStarted = false;
 
@@ -286,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for await (const chunk of stream) {
                 if (!streamStarted) {
                     streamStarted = true;
-                    loadingOverlay.classList.add('hidden'); // Hide spinner once text starts
+                    loadingOverlay.classList.add('hidden');
                 }
                 fullResult += chunk;
                 scheduleRender(fullResult);
@@ -309,59 +327,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // History Navigation Logic
-    function addToHistory(result) {
-        // If we were browsing history and generate new result, truncate future history
-        if (currentHistoryIndex < resultHistory.length - 1) {
-            resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
-        }
+    // --- Chat Handler ---
 
-        resultHistory.push(result);
-        currentHistoryIndex = resultHistory.length - 1;
-        updateHistoryUI();
-        renderOutput(result);
+    function appendChatMessage(role, text, save = true) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${role}`;
+        msgDiv.innerText = text;
+        chatHistoryDiv.appendChild(msgDiv);
+        return msgDiv;
     }
 
-    function updateHistoryUI() {
-        if (resultHistory.length > 1) {
-            historyNav.classList.remove('hidden');
-            historyCounter.textContent = `${currentHistoryIndex + 1} / ${resultHistory.length}`;
-
-            prevResultBtn.disabled = currentHistoryIndex === 0;
-            nextResultBtn.disabled = currentHistoryIndex === resultHistory.length - 1;
-
-            // Visual feedback for disabled state
-            prevResultBtn.style.opacity = prevResultBtn.disabled ? '0.5' : '1';
-            nextResultBtn.style.opacity = nextResultBtn.disabled ? '0.5' : '1';
-        } else {
-            historyNav.classList.add('hidden');
-        }
-    }
-
-    prevResultBtn.addEventListener('click', () => {
-        if (currentHistoryIndex > 0) {
-            currentHistoryIndex--;
-            renderOutput(resultHistory[currentHistoryIndex]);
-            updateHistoryUI();
-            saveState(); // Save index position
-        }
-    });
-
-    nextResultBtn.addEventListener('click', () => {
-        if (currentHistoryIndex < resultHistory.length - 1) {
-            currentHistoryIndex++;
-            renderOutput(resultHistory[currentHistoryIndex]);
-            updateHistoryUI();
-            saveState(); // Save index position
-        }
-    });
-
-    // Chat Logic
     async function handleChat() {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        // If already streaming chat, abort
         if (isStreaming) {
             client.abort();
             return;
@@ -371,10 +350,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatInput.value = '';
         saveState();
 
-        // Auto-scroll
         chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
 
-        // Create placeholder for streaming response
         const assistantMsgDiv = appendChatMessage('assistant', '');
         let fullResponse = '';
 
@@ -397,7 +374,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveState();
         } catch (error) {
             if (error.name === 'AbortError') {
-                // Keep partial response if any
                 if (!fullResponse) {
                     assistantMsgDiv.innerText = '[Cancelled]';
                     assistantMsgDiv.classList.add('system');
@@ -423,70 +399,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    function appendChatMessage(role, text, save = true) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `chat-message ${role}`;
-        msgDiv.innerText = text;
-        chatHistoryDiv.appendChild(msgDiv);
-        return msgDiv; // Return for streaming updates
-    }
+    // --- Input/Output Event Handlers ---
 
-    // New Chat Button
+    outputDisplay.addEventListener('input', () => {
+        if (currentHistoryIndex >= 0 && resultHistory[currentHistoryIndex] !== undefined) {
+            resultHistory[currentHistoryIndex] = outputDisplay.value;
+            saveState();
+        }
+    });
+
+    promptInput.addEventListener('input', () => {
+        saveState();
+    });
+
+    // --- New Chat Button ---
+
     newChatBtn.addEventListener('click', () => {
-        // Create new session
         currentSession = sessionManager.createNewSession();
-        loadCurrentSession(); // Reload UI with empty session
+        loadCurrentSession();
     });
 
-    // Save Prompt Button
-    savePromptBtn.addEventListener('click', () => {
-        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
-            alert("No prompt to save!");
-            return;
-        }
-
-        const content = resultHistory[currentHistoryIndex];
-        let filename = 'optimized-prompt.md';
-
-        // Remove markdown code blocks if present
-        // This regex removes the opening ```markdown (or other lang) and the closing ```
-        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '');
-        cleanContent = cleanContent.trim();
-
-        // Try to parse YAML frontmatter to get the name
-        try {
-            // Match YAML block (find the first one)
-            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
-            if (match) {
-                const yamlText = match[1];
-
-                // Security: Basic size check before parsing to prevent DoS
-                if (yamlText.length > 50000) {
-                    console.warn("YAML frontmatter too large, skipping parse.");
-                    throw new Error("YAML too large");
-                }
-
-                const data = jsyaml.load(yamlText);
-                if (data && data.name) {
-                    // Sanitize filename
-                    filename = data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
-                }
-            }
-        } catch (e) {
-            console.error("Failed to parse YAML for filename:", e);
-        }
-
-        // Create blob and download
-        const blob = new Blob([cleanContent], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
+    // --- Copy Button ---
 
     copyBtn.addEventListener('click', () => {
         const content = outputDisplay.value;
@@ -498,12 +431,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Input auto-save
-    promptInput.addEventListener('input', () => {
-        saveState();
+    // --- Save Prompt Button (Download) ---
+
+    savePromptBtn.addEventListener('click', () => {
+        if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
+            alert("No prompt to save!");
+            return;
+        }
+
+        const content = resultHistory[currentHistoryIndex];
+        let filename = 'optimized-prompt.md';
+
+        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '').trim();
+
+        try {
+            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
+            if (match) {
+                const yamlText = match[1];
+                if (yamlText.length <= 50000) {
+                    const data = jsyaml.load(yamlText);
+                    if (data && data.name) {
+                        filename = sanitizeFilename(data.name);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse YAML for filename:", e);
+        }
+
+        downloadFile(cleanContent, filename);
     });
 
-    // --- History Modal Logic ---
+    // --- History Modal ---
 
     function renderSessionsList() {
         const sessions = sessionManager.getAllSessions();
@@ -527,7 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             item.innerHTML = `
                 <div class="session-info">
-                    <div class="session-name">${session.name || 'Untitled Session'}</div>
+                    <div class="session-name">${escapeHtml(session.name || 'Untitled Session')}</div>
                     <div class="session-date">${date}</div>
                 </div>
                 <div class="session-actions">
@@ -537,22 +496,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
 
-            // Click on item to load (excluding delete button)
             item.addEventListener('click', (e) => {
                 if (!e.target.closest('.delete-session')) {
                     sessionManager.setCurrentSessionId(session.id);
                     loadCurrentSession();
-                    historyModal.classList.add('hidden');
+                    hideModal(historyModal);
                 }
             });
 
-            // Delete button
             const deleteBtn = item.querySelector('.delete-session');
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (confirm('Are you sure you want to delete this session?')) {
                     sessionManager.deleteSession(session.id);
-                    // If we deleted the current session, create a new one
                     if (session.id === currentSession.id) {
                         currentSession = sessionManager.createNewSession();
                         loadCurrentSession();
@@ -567,449 +523,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     historyBtn.addEventListener('click', () => {
         renderSessionsList();
-        historyModal.classList.remove('hidden');
+        showModal(historyModal);
     });
 
-    closeHistoryBtn.addEventListener('click', () => {
-        historyModal.classList.add('hidden');
-    });
+    setupModal(historyModal, closeHistoryBtn);
 
-    historyModal.addEventListener('click', (e) => {
-        if (e.target === historyModal) {
-            historyModal.classList.add('hidden');
-        }
-    });
+    // --- Library Modal ---
 
-
-    // Settings Modal Logic
-    settingsBtn.addEventListener('click', () => {
-        settingsModal.classList.remove('hidden');
-
-        // Populate Optimize/Refine API settings
-        apiUrlInput.value = client.baseUrl;
-        modelNameInput.value = client.model;
-        apiKeyInput.value = client.apiKey;
-
-        const isSaved = !!localStorage.getItem('slop_api_key');
-        saveKeyCheckbox.checked = isSaved;
-
-        if (isSaved) {
-            keySavedBadge.classList.remove('hidden');
-        } else {
-            keySavedBadge.classList.add('hidden');
-        }
-
-        // Populate Chat API settings
-        chatApiUrlInput.value = client.chatBaseUrl;
-        chatModelNameInput.value = client.chatModel;
-        chatApiKeyInput.value = client.chatApiKey;
-
-        const isChatKeySaved = !!localStorage.getItem('slop_chat_api_key');
-        chatSaveKeyCheckbox.checked = isChatKeySaved;
-
-        if (isChatKeySaved) {
-            chatKeySavedBadge.classList.remove('hidden');
-        } else {
-            chatKeySavedBadge.classList.add('hidden');
-        }
-
-        // Load word wrap setting
-        wordWrapCheckbox.checked = localStorage.getItem('slop_word_wrap') === 'true';
-    });
-
-    // Apply word wrap setting on load
-    const wordWrapCheckbox = document.getElementById('word-wrap');
-    const savedWordWrap = localStorage.getItem('slop_word_wrap') === 'true';
-    applyWordWrap(savedWordWrap);
-
-    function applyWordWrap(enabled) {
-        if (enabled) {
-            outputDisplay.classList.remove('no-wrap');
-            promptInput.classList.remove('no-wrap');
-        } else {
-            outputDisplay.classList.add('no-wrap');
-            promptInput.classList.add('no-wrap');
-        }
-    }
-
-    closeSettingsBtn.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
-    });
-
-    saveSettingsBtn.addEventListener('click', () => {
-        const url = apiUrlInput.value.trim();
-        const model = modelNameInput.value.trim();
-        const apiKey = apiKeyInput.value.trim();
-        const saveKey = saveKeyCheckbox.checked;
-        const wordWrap = wordWrapCheckbox.checked;
-
-        // Chat API settings
-        const chatUrl = chatApiUrlInput.value.trim();
-        const chatModel = chatModelNameInput.value.trim();
-        const chatApiKey = chatApiKeyInput.value.trim();
-        const chatSaveKey = chatSaveKeyCheckbox.checked;
-
-        if (url && model) {
-            client.updateConfig(url, model, apiKey, saveKey);
-            client.updateChatConfig(chatUrl, chatModel, chatApiKey, chatSaveKey);
-
-            // Save word wrap setting
-            localStorage.setItem('slop_word_wrap', wordWrap);
-            applyWordWrap(wordWrap);
-
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    // Close modal on outside click
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) {
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    // --- Prompt Settings Logic ---
-
-    // Helper to open specific prompt section
-    function openPromptSettings(sectionId) {
-        // Load current prompts
-        optimizePromptInput.value = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
-        chatPromptInput.value = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-        refinePromptInput.value = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
-        refineNoChatPromptInput.value = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
-
-        // Hide all sections
-        sectionOptimize.classList.add('hidden');
-        sectionRefine.classList.add('hidden');
-        sectionRefineNoChat.classList.add('hidden');
-        sectionChat.classList.add('hidden');
-
-        // Show requested section
-        document.getElementById(sectionId).classList.remove('hidden');
-
-        settingsModal.classList.add('hidden'); // Close main settings
-        promptSettingsModal.classList.remove('hidden');
-    }
-
-    editOptimizePromptBtn.addEventListener('click', () => openPromptSettings('section-optimize'));
-    editRefinePromptBtn.addEventListener('click', () => openPromptSettings('section-refine'));
-    editRefineNoChatPromptBtn.addEventListener('click', () => openPromptSettings('section-refine-no-chat'));
-    editChatPromptBtn.addEventListener('click', () => openPromptSettings('section-chat'));
-
-    closePromptSettingsBtn.addEventListener('click', () => {
-        promptSettingsModal.classList.add('hidden');
-        settingsModal.classList.remove('hidden'); // Re-open main settings
-    });
-
-    promptSettingsModal.addEventListener('click', (e) => {
-        if (e.target === promptSettingsModal) {
-            promptSettingsModal.classList.add('hidden');
-            settingsModal.classList.remove('hidden');
-        }
-    });
-
-    // Optimize Prompt Actions
-    saveOptimizePromptBtn.addEventListener('click', () => {
-        const val = optimizePromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_optimize', val);
-            alert('Optimize prompt saved!');
-        }
-    });
-
-    resetOptimizePromptBtn.addEventListener('click', () => {
-        if (confirm('Reset optimize prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.optimize;
-            optimizePromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_optimize', defaultVal);
-        }
-    });
-
-    // Chat Prompt Actions
-    saveChatPromptBtn.addEventListener('click', () => {
-        const val = chatPromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_chat', val);
-            alert('Chat prompt saved!');
-        }
-    });
-
-    resetChatPromptBtn.addEventListener('click', () => {
-        if (confirm('Reset chat prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.chat;
-            chatPromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_chat', defaultVal);
-        }
-    });
-
-    // Refine Prompt Actions
-    saveRefinePromptBtn.addEventListener('click', () => {
-        const val = refinePromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_refine', val);
-            alert('Refine prompt saved!');
-        }
-    });
-
-    resetRefinePromptBtn.addEventListener('click', () => {
-        if (confirm('Reset refine prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.refine;
-            refinePromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_refine', defaultVal);
-        }
-    });
-
-    // Refine (No Chat) Prompt Actions
-    saveRefineNoChatPromptBtn.addEventListener('click', () => {
-        const val = refineNoChatPromptInput.value.trim();
-        if (val) {
-            localStorage.setItem('slop_prompt_refine_no_chat', val);
-            alert('Refine (No Chat) prompt saved!');
-        }
-    });
-
-    resetRefineNoChatPromptBtn.addEventListener('click', () => {
-        if (confirm('Reset refine (no chat) prompt to default?')) {
-            const defaultVal = LLMClient.DEFAULT_PROMPTS.refine_no_chat;
-            refineNoChatPromptInput.value = defaultVal;
-            localStorage.setItem('slop_prompt_refine_no_chat', defaultVal);
-        }
-    });
-
-    // Fetch Models Logic
-    fetchModelsBtn.addEventListener('click', async () => {
-        const originalIcon = fetchModelsBtn.innerHTML;
-        fetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        try {
-            // Temporarily update client URL to fetch from the input value
-            const tempClient = new LLMClient();
-            tempClient.baseUrl = apiUrlInput.value.trim();
-
-            const models = await tempClient.getModels();
-
-            if (models && models.length > 0) {
-                // Show select, hide text input if we have models
-                modelSelect.innerHTML = '';
-                models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.id;
-                    option.textContent = m.id;
-                    modelSelect.appendChild(option);
-                });
-
-                modelSelect.classList.remove('hidden');
-                modelNameInput.classList.add('hidden');
-
-                // When select changes, update the hidden text input (or just use select value)
-                modelSelect.addEventListener('change', () => {
-                    modelNameInput.value = modelSelect.value;
-                });
-
-                // Set initial value
-                modelSelect.value = models[0].id;
-                modelNameInput.value = models[0].id;
-            } else {
-                alert('No models found or empty list returned.');
-            }
-        } catch (error) {
-            alert('Failed to fetch models. Check URL.');
-            console.error(error);
-        } finally {
-            fetchModelsBtn.innerHTML = originalIcon;
-        }
-    });
-
-    // Fetch Models Logic for Chat API
-    chatFetchModelsBtn.addEventListener('click', async () => {
-        const originalIcon = chatFetchModelsBtn.innerHTML;
-        chatFetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        try {
-            const chatUrl = chatApiUrlInput.value.trim();
-            const chatKey = chatApiKeyInput.value.trim();
-
-            if (!chatUrl) {
-                alert('Please enter a Chat API URL first.');
-                return;
-            }
-
-            const models = await client.getModelsForEndpoint(chatUrl, chatKey);
-
-            if (models && models.length > 0) {
-                // Show select, hide text input if we have models
-                chatModelSelect.innerHTML = '';
-                models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.id;
-                    option.textContent = m.id;
-                    chatModelSelect.appendChild(option);
-                });
-
-                chatModelSelect.classList.remove('hidden');
-                chatModelNameInput.classList.add('hidden');
-
-                // When select changes, update the hidden text input
-                chatModelSelect.addEventListener('change', () => {
-                    chatModelNameInput.value = chatModelSelect.value;
-                });
-
-                // Set initial value
-                chatModelSelect.value = models[0].id;
-                chatModelNameInput.value = models[0].id;
-            } else {
-                alert('No models found or empty list returned.');
-            }
-        } catch (error) {
-            alert('Failed to fetch models. Check Chat API URL.');
-            console.error(error);
-        } finally {
-            chatFetchModelsBtn.innerHTML = originalIcon;
-        }
-    });
-
-    // Helpers
-    const optimizeBtnOriginalHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Optimize';
-    const refineBtnOriginalHTML = '<i class="fa-solid fa-rotate-right"></i> Refine';
-    const stopBtnHTML = '<i class="fa-solid fa-stop"></i> Stop';
-
-    function setLoading(loading, mode = null) {
-        isStreaming = loading;
-
-        if (loading) {
-            loadingOverlay.classList.remove('hidden');
-
-            // Transform the active button to a Stop button
-            if (mode === 'optimize') {
-                optimizeBtn.innerHTML = stopBtnHTML;
-                optimizeBtn.classList.add('stop-btn');
-                refineBtn.disabled = true;
-            } else if (mode === 'refine') {
-                refineBtn.innerHTML = stopBtnHTML;
-                refineBtn.classList.add('stop-btn');
-                optimizeBtn.disabled = true;
-            } else {
-                optimizeBtn.disabled = true;
-                refineBtn.disabled = true;
-            }
-        } else {
-            loadingOverlay.classList.add('hidden');
-
-            // Restore buttons
-            optimizeBtn.innerHTML = optimizeBtnOriginalHTML;
-            optimizeBtn.classList.remove('stop-btn');
-            optimizeBtn.disabled = false;
-
-            refineBtn.innerHTML = refineBtnOriginalHTML;
-            refineBtn.classList.remove('stop-btn');
-            refineBtn.disabled = false;
-        }
-    }
-
-    function renderOutput(text) {
-        // Output is now a textarea, just set the value directly
-        outputDisplay.value = text;
-    }
-
-    // ===== RESIZE HANDLE LOGIC =====
-    const resizeHandle = document.getElementById('resize-handle');
-    const inputPanel = document.querySelector('.input-panel');
-    const inputArea = document.querySelector('.input-area');
-    const chatInterface = document.querySelector('.chat-interface');
-
-    // Minimum heights in pixels
-    const MIN_INPUT_HEIGHT = 280;
-    const MIN_CHAT_HEIGHT = 310;
-
-    // Load saved chat height percentage from localStorage, default to 35%
-    const savedChatHeight = localStorage.getItem('chatHeightPercentage');
-    if (savedChatHeight) {
-        chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
-    }
-
-    let isResizing = false;
-    let startY = 0;
-    let startChatHeight = 0;
-
-    resizeHandle.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startY = e.clientY;
-
-        // Get current chat height as percentage
-        const chatStyle = window.getComputedStyle(chatInterface);
-        const chatHeightPx = parseFloat(chatStyle.height);
-        const panelHeightPx = inputPanel.offsetHeight;
-        startChatHeight = (chatHeightPx / panelHeightPx) * 100;
-
-        // Prevent text selection during drag
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'ns-resize';
-
-        e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
-
-        const deltaY = e.clientY - startY;
-        const panelHeight = inputPanel.offsetHeight;
-
-        // Calculate the change as a percentage of the panel height
-        const deltaPercent = (deltaY / panelHeight) * 100;
-
-        // New chat height percentage (dragging down decreases chat, up increases chat)
-        let newChatHeightPercent = startChatHeight - deltaPercent;
-
-        // Calculate what the input area height would be
-        const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
-        const newInputHeightPx = panelHeight - newChatHeightPx;
-
-        // Enforce pixel-based minimum constraints
-        if (newInputHeightPx < MIN_INPUT_HEIGHT) {
-            // Input area too small, limit it
-            newChatHeightPercent = ((panelHeight - MIN_INPUT_HEIGHT) / panelHeight) * 100;
-        } else if (newChatHeightPx < MIN_CHAT_HEIGHT) {
-            // Chat area too small, limit it
-            newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
-        }
-
-        // Clamp between reasonable bounds (at least 15% and at most 85%)
-        newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
-
-        // Apply the new height
-        chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (isResizing) {
-            isResizing = false;
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-
-            // Save the final chat height percentage to localStorage
-            const chatStyle = window.getComputedStyle(chatInterface);
-            const chatHeightPx = parseFloat(chatStyle.height);
-            const panelHeightPx = inputPanel.offsetHeight;
-            const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
-
-            localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
-        }
-    });
-
-    // ===== PROMPT LIBRARY LOGIC =====
-
-    // Render prompt list in library modal
     async function renderLibraryPromptList(filter = '') {
-        allLibraryPrompts = await promptLibrary.getAllPrompts();
+        const allLibraryPrompts = await promptLibrary.getAllPrompts();
         const lowerFilter = filter.toLowerCase();
 
-        // Apply name filter
         let filtered = allLibraryPrompts;
         if (lowerFilter) {
             filtered = filtered.filter(p => p.name.toLowerCase().includes(lowerFilter));
         }
 
-        // Sort by updated date (newest first)
         filtered.sort((a, b) => b.updated - a.updated);
 
         libraryPromptList.innerHTML = '';
@@ -1029,34 +558,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="item-description">${escapeHtml(prompt.description || 'No description')}</div>
             `;
-            li.addEventListener('click', () => selectLibraryPrompt(prompt.id));
+            li.addEventListener('click', () => {
+                selectedPromptId = prompt.id;
+                libraryPromptList.querySelectorAll('.list-item').forEach(item => {
+                    item.classList.toggle('selected', parseInt(item.dataset.id) === prompt.id);
+                });
+            });
             libraryPromptList.appendChild(li);
         });
     }
 
-    // Select a prompt in the list
-    async function selectLibraryPrompt(id) {
-        selectedPromptId = id;
-
-        // Update selection in list
-        libraryPromptList.querySelectorAll('.list-item').forEach(li => {
-            li.classList.toggle('selected', parseInt(li.dataset.id) === id);
-        });
-    }
-
-    // Clear library selection
-    function clearLibrarySelection() {
-        selectedPromptId = null;
-    }
-
-    // Escape HTML for safe display
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // Quick Save to Library - with user choice for duplicates
     librarySaveBtn.addEventListener('click', async () => {
         if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
             alert('No prompt to save!');
@@ -1067,7 +578,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const parsed = promptLibrary.parseYamlFrontmatter(content);
         const baseName = parsed.name;
 
-        // Check if name already exists
         const allPrompts = await promptLibrary.getAllPrompts();
         const existing = allPrompts.find(p => p.name.toLowerCase() === baseName.toLowerCase());
 
@@ -1075,7 +585,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const choice = confirm(`A prompt named "${baseName}" already exists.\n\nClick OK to overwrite, or Cancel to keep both (will add a number).`);
 
             if (choice) {
-                // Overwrite - delete existing and save new
                 try {
                     await promptLibrary.deletePrompt(existing.id);
                     await promptLibrary.savePrompt(content, false);
@@ -1084,7 +593,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     alert('Failed to save prompt: ' + error.message);
                 }
             } else {
-                // Keep both - auto-generate unique name
                 try {
                     await promptLibrary.savePrompt(content, true);
                     alert('Prompt saved to library with new name!');
@@ -1093,7 +601,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } else {
-            // No conflict, save normally
             try {
                 await promptLibrary.savePrompt(content, false);
                 alert('Prompt saved to library!');
@@ -1103,53 +610,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Open Library Modal
     libraryBtn.addEventListener('click', async () => {
-        clearLibrarySelection();
+        selectedPromptId = null;
         libraryNameFilter.value = '';
-
         await renderLibraryPromptList();
-
-        libraryModal.classList.remove('hidden');
+        showModal(libraryModal);
     });
 
-    // Close Library Modal
-    closeLibraryBtn.addEventListener('click', () => {
-        libraryModal.classList.add('hidden');
-    });
+    setupModal(libraryModal, closeLibraryBtn);
 
-    libraryModal.addEventListener('click', (e) => {
-        if (e.target === libraryModal) {
-            libraryModal.classList.add('hidden');
-        }
-    });
-
-    // Filter prompts by name
     libraryNameFilter.addEventListener('input', () => {
         renderLibraryPromptList(libraryNameFilter.value);
     });
 
-    // Delete selected prompt
     libraryDeleteBtn.addEventListener('click', async () => {
         if (!selectedPromptId) {
             alert('No prompt selected!');
             return;
         }
 
-        if (!confirm('Delete this prompt?')) {
-            return;
-        }
+        if (!confirm('Delete this prompt?')) return;
 
         try {
             await promptLibrary.deletePrompt(selectedPromptId);
-            clearLibrarySelection();
+            selectedPromptId = null;
             await renderLibraryPromptList(libraryNameFilter.value);
         } catch (error) {
             alert('Failed to delete prompt: ' + error.message);
         }
     });
 
-    // Download selected prompt
     libraryDownloadBtn.addEventListener('click', async () => {
         if (!selectedPromptId) {
             alert('No prompt selected!');
@@ -1159,19 +649,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prompt = await promptLibrary.getPrompt(selectedPromptId);
         if (!prompt) return;
 
-        const filename = prompt.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
-        const blob = new Blob([prompt.content], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadFile(prompt.content, sanitizeFilename(prompt.name));
     });
 
-    // Open selected prompt in main view
     libraryOpenBtn.addEventListener('click', async () => {
         if (!selectedPromptId) {
             alert('No prompt selected!');
@@ -1181,17 +661,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prompt = await promptLibrary.getPrompt(selectedPromptId);
         if (!prompt) return;
 
-        // Load content directly into output display (now a textarea)
         outputDisplay.value = prompt.content;
-
-        // Add to result history
         addToHistory(prompt.content);
         saveState();
-
-        libraryModal.classList.add('hidden');
+        hideModal(libraryModal);
     });
 
-    // Import from file
     libraryImportBtn.addEventListener('click', () => {
         importFileInput.click();
     });
@@ -1202,10 +677,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const content = event.target.result;
-
             try {
-                await promptLibrary.savePrompt(content, true);
+                await promptLibrary.savePrompt(event.target.result, true);
                 alert('Prompt imported!');
                 await renderLibraryPromptList(libraryNameFilter.value);
             } catch (error) {
@@ -1213,8 +686,75 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
         reader.readAsText(file);
-
-        // Reset input so same file can be selected again
         importFileInput.value = '';
+    });
+
+    // --- Resize Handle ---
+
+    const resizeHandle = document.getElementById('resize-handle');
+    const inputPanel = document.querySelector('.input-panel');
+    const chatInterface = document.querySelector('.chat-interface');
+
+    const MIN_INPUT_HEIGHT = 280;
+    const MIN_CHAT_HEIGHT = 310;
+
+    const savedChatHeight = localStorage.getItem('chatHeightPercentage');
+    if (savedChatHeight) {
+        chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
+    }
+
+    let isResizing = false;
+    let startY = 0;
+    let startChatHeight = 0;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+
+        const chatStyle = window.getComputedStyle(chatInterface);
+        const chatHeightPx = parseFloat(chatStyle.height);
+        const panelHeightPx = inputPanel.offsetHeight;
+        startChatHeight = (chatHeightPx / panelHeightPx) * 100;
+
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const deltaY = e.clientY - startY;
+        const panelHeight = inputPanel.offsetHeight;
+        const deltaPercent = (deltaY / panelHeight) * 100;
+
+        let newChatHeightPercent = startChatHeight - deltaPercent;
+
+        const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
+        const newInputHeightPx = panelHeight - newChatHeightPx;
+
+        if (newInputHeightPx < MIN_INPUT_HEIGHT) {
+            newChatHeightPercent = ((panelHeight - MIN_INPUT_HEIGHT) / panelHeight) * 100;
+        } else if (newChatHeightPx < MIN_CHAT_HEIGHT) {
+            newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
+        }
+
+        newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
+        chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+
+            const chatStyle = window.getComputedStyle(chatInterface);
+            const chatHeightPx = parseFloat(chatStyle.height);
+            const panelHeightPx = inputPanel.offsetHeight;
+            const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
+
+            localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
+        }
     });
 });
