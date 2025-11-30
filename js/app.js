@@ -311,11 +311,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             flushRender();
             addToHistory(fullResult);
-            
+
             // Reset chat for the new refined prompt - clean slate
             client.history = [];
             chatHistoryDiv.innerHTML = '<div class="chat-message system"><p><i class="fa-solid fa-rotate-right"></i> Prompt refined. Chat reset for fresh context.</p></div>';
-            
+
             saveState();
         } catch (error) {
             flushRender();
