@@ -102,7 +102,7 @@ class LLMClient {
 
 ## Role:
 
-You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the raw prompt input shown below as <ref:original_prompt>, analyze it, and rewrite it to be highly effective, clear, and robust. The input may either be a structured prompt or a freeform idea from the user, but your output must be in markdown and YAML format.
+You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the raw Input Prompt or idea shown below as <ref:original_prompt>, analyze it, and rewrite it to be a highly effective, clear, and robust prompt. The input may either be a structured prompt or a freeform idea from the user, but your output must include a YAML frontmatter and an expertly crafted prompt formatted as listed in our instructions. 
 
 ## Input Prompt or Idea:
 
@@ -112,9 +112,10 @@ You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the ra
 
 ## Instructions:
 
-1. Analyze the <ref:original_prompt> to understand their goal.
-2. Construct a professional prompt based on their request.
-3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
+1. Analyze the <ref:original_prompt> to understand the user's intent or goal.
+2. Craft a professionally engineered prompt based on your understanding from your analysis.
+3. If the input has extensive existing frontmatter, retain it in the new frontmatter.
+4. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
    ---
    name: [Short Name]
@@ -130,37 +131,45 @@ You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the ra
 
    [Refined Prompt Content]
 
-4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
+4. XML tags may be used to surround modular sections of structured prompts and used for reference, i.e., <ref:section_tag>. Any section XML opened must also be closed.
+5. Do not include the <original_prompt> wrapper or placeholder text in the output. Your output should only be the YAML frontmatter and the professionally engineered prompt.
+6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
 `,
         chat: `# Objective
 
 ## Role:
 
-You are a professional prompt engineer with experience in all types of LLM prompting, who is tasked with evaluating an discussing the users prompts and helping to improve them. 
+You are an expert Prompt Engineer and LLM Optimizer, who is tasked with analyzing, evaluating, and discussing prompts presented to you for discussion with the user. You goal is to help the user improve their prompts based on your expertise and the context provided. 
+The following sections provide context for the discussion:
+    <ref:original_prompt> - The original prompt or idea given by the user before any optimization
+    <ref:current_optimized_result> - The current optimized prompt based on previous iterations
+    The history of the chat between the user and the assistant to this point
 
 ## Instructions:
 
-1. Evaluate the "Current Optimized Result", using the "Original User Intent" as a grounding reference point
-2. Understand that the user's goals may evolve as the chat progresses
+1. Evaluate the "<ref:current_optimized_result>", using the "<ref:original_prompt>" as a grounding reference point
+2. Digest the chat history to understand the user's needs and desires, and understand that the user's goals may evolve as the chat progresses
 3. Leverage your knowledge and experience in the field of prompt engineering to provide expert advice
 4. Avoid common prompting pitfalls
 5. Recommend 2-3 potential refinements.
-6. Chat with the user in an open and friendly manner, explaining your criticisms, recommendations, and the reasoning for each, clearly and concisely.
-7. The "Original User Intent" and "Current Optimized Result" are provided below for context.
+6. Chat with the user in an open and friendly manner, explaining your criticisms, recommendations, and the reasoning clearly and concisely.
+7. The "<ref:original_prompt>" and "<ref:current_optimized_result>" are provided below for context.
+8. Remember that you are advising and not rewriting their prompt.
 
-## Original User Intent:
+## Input Prompt or Idea:
 
-"""
+<original_prompt>
 {{originalPrompt}}
-"""
+</original_prompt> 
 
 ## Current Optimized Result:
 
-"""
+<current_optimized_result>
 {{optimizedResult}}
-"""
+</current_optimized_result>
 
-8. Remember that you are advising and not just rewriting their prompt.
+## Chat History:
+The chat history between you and the user follows below. 
 `,
         chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
         refine: `# Objective:
@@ -172,9 +181,9 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
 ## Original User Idea:
 
-"""
-"{{originalPrompt}}"
-"""
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
 ## Current Optimized Prompt:
 
@@ -218,13 +227,17 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 You are an expert Prompt Engineer. 
 Your task is to incrementally REFINE the "Current Optimized Prompt" based on the "Original User Idea" as a grounding reference. The goal is to better align the prompt with the intent of the "Original User Idea". The "Original User Idea" and the "Current Optimized Prompt" are included in the context below.
 
-## Updated User Idea:
+---
 
-"{{originalPrompt}}"
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
-## Current Optimized Prompt:
+---
 
 {{currentResult}}
+
+---
 
 ## Instructions:
 
@@ -339,31 +352,46 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
             this.history = [];
         }
 
+        // Persist the user's message to the saved history (unchanged)
         this.history.push({ role: "user", content: userMessage });
 
-        // Build messages array for API call
-        const messages = [];
+        // Work on a copy to avoid editing the saved history
+        const historyCopy = this.history.map(m => ({ role: m.role, content: m.content }));
 
-        // Add system message with context if prompts are provided
+        // Prepare the assembled prompt text (we won't send it as a system role)
+        let assembledPrompt = null;
         if (originalPrompt && optimizedResult) {
-            let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-            const systemContent = systemTemplate
+            const systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
+            assembledPrompt = systemTemplate
                 .replace('{{originalPrompt}}', originalPrompt)
                 .replace('{{optimizedResult}}', optimizedResult);
-
-            messages.push({
-                role: "system",
-                content: systemContent
-            });
         } else {
-            messages.push({
-                role: "system",
-                content: LLMClient.DEFAULT_PROMPTS.chat_fallback
-            });
+            assembledPrompt = LLMClient.DEFAULT_PROMPTS.chat_fallback;
         }
 
-        // Add chat history
-        messages.push(...this.history);
+        // Find the first user message to attach the assembled prompt into
+        let firstUserIdx = historyCopy.findIndex(m => m.role === 'user');
+        if (firstUserIdx === -1) {
+            // no user message found; create one at the beginning
+            historyCopy.unshift({ role: 'user', content: assembledPrompt });
+            firstUserIdx = 0;
+        } else {
+            // prefix the assembled prompt into the first user message
+            historyCopy[firstUserIdx].content = assembledPrompt + '\n\n' + historyCopy[firstUserIdx].content;
+        }
+
+        // Remove any system role entries from the copy and merge consecutive user messages
+        const merged = [];
+        for (const msg of historyCopy) {
+            if (msg.role === 'system') continue;
+            if (merged.length && merged[merged.length - 1].role === 'user' && msg.role === 'user') {
+                merged[merged.length - 1].content += '\n\n' + msg.content;
+            } else {
+                merged.push({ role: msg.role, content: msg.content });
+            }
+        }
+
+        const messages = merged;
 
         // Use chat-specific config with fallback to primary config
         const chatUrl = this.chatBaseUrl || this.baseUrl;
@@ -371,9 +399,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         const chatKey = this.chatApiKey || this.apiKey;
 
         const headers = { 'Content-Type': 'application/json' };
-        if (chatKey) {
-            headers['Authorization'] = `Bearer ${chatKey}`;
-        }
+        if (chatKey) headers['Authorization'] = `Bearer ${chatKey}`;
 
         const response = await fetch(`${chatUrl}/chat/completions`, {
             method: 'POST',
@@ -395,7 +421,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
             yield chunk;
         }
 
-        // Add complete response to history
+        // Save assistant response back to the original history (without the assembled prompt)
         this.history.push({ role: "assistant", content: fullResponse });
     }
 
