@@ -68,7 +68,7 @@ This comprehensive audit examined all source code, configuration, and documentat
   - `chatHeightPercentage` - UI preference
 - **IndexedDB Database:**
   - `slop_prompt_library` - Persistent storage for saved prompts (Prompt Library feature)
-    - Object store: `prompts` with indexes on `name`, `tags`, `created`, `updated`
+    - Object store: `prompts` with indexes on `name`, `created`, `updated`
 
 **No Server-Side Storage:**
 - Zero external data transmission (except to user-configured LLM endpoint)
@@ -290,11 +290,6 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 ### Production Readiness: ✅ APPROVED
 
 **Required Actions:** None
-
-**Optional Enhancements (Future):**
-1. Consider adding Content Security Policy (CSP) meta tags to HTML
-2. Add Subresource Integrity (SRI) hashes for local libraries
-3. Add export/import functionality for full session backup/restore
 
 ### Repository Publishing: ✅ SAFE
 

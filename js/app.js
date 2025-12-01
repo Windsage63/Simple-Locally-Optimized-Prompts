@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let streamStarted = false;
 
         try {
-            for await (const chunk of client.optimizePromptStream(text)) {
+            for await (const chunk of client.optimizePrompt(text)) {
                 if (!streamStarted) {
                     streamStarted = true;
                     loadingOverlay.classList.add('hidden');
@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const stream = includeChat
-                ? client.refinePromptStream(originalText, currentOutput, client.history)
-                : client.noChatRefinePromptStream(originalText, currentOutput);
+                ? client.refinePrompt(originalText, currentOutput, client.history)
+                : client.noChatRefinePrompt(originalText, currentOutput);
 
             for await (const chunk of stream) {
                 if (!streamStarted) {

@@ -50,7 +50,7 @@ class PromptLibrary {
     /**
      * Parse YAML frontmatter from markdown content
      * @param {string} content - Markdown content with YAML frontmatter
-     * @returns {Object} - { name, description, tags, body }
+     * @returns {Object} - { name, description, body }
      */
     parseYamlFrontmatter(content) {
         const result = {
@@ -77,7 +77,7 @@ class PromptLibrary {
                 if (data.description) result.description = String(data.description).trim();
                 result.body = body.trim();
             } catch (e) {
-                console.warn('Failed to parse YAML frontmatter:', e);
+                console.warn('No YAML frontmatter found or failed to parse YAML frontmatter:', e);
             }
         }
 
