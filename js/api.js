@@ -102,13 +102,17 @@ class LLMClient {
 
 ## Role:
 
-You are an expert Prompt Engineer and LLM Optimizer. 
-Your task is to take a raw prompt input, analyze it, and rewrite it to be highly effective, clear, and robust.
-The input will be freeform writing, but your output must be in markdown and YAML format.
+You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the raw prompt input shown below as <ref:original_prompt>, analyze it, and rewrite it to be highly effective, clear, and robust. The input may either be a structured prompt or a freeform idea from the user, but your output must be in markdown and YAML format.
+
+## Input Prompt or Idea:
+
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
 ## Instructions:
 
-1. Analyze the user's freeform request to understand their goal.
+1. Analyze the <ref:original_prompt> to understand their goal.
 2. Construct a professional prompt based on their request.
 3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
@@ -294,19 +298,14 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
      */
     async *optimizePrompt(userPrompt) {
         const signal = this.createAbortController();
-        const systemPrompt = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
-
-        const messages = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-        ];
+        const template = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+        const payload = template.replace(/{{\s*originalPrompt\s*}}/g, userPrompt || '');
+        const messages = [{ role: "user", content: payload }];
 
         const headers = {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         };
-        if (this.apiKey) {
-            headers['Authorization'] = `Bearer ${this.apiKey}`;
-        }
+        if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
 
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
             method: 'POST',
@@ -319,12 +318,10 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
             }),
             signal
         });
-
         if (!response.ok) {
             const err = await response.text();
             throw new Error(`API Error: ${response.status} - ${err}`);
         }
-
         yield* this.parseSSEStream(response);
     }
 
