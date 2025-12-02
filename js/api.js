@@ -263,6 +263,24 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 `
     };
 
+    static batchTemplateReplace(template, replacements, fallback = '') {
+        if (template == null) return '';
+
+        // Sort keys by length (longest first) to avoid partial matches
+        const keys = Object.keys(replacements).sort((a, b) => b.length - a.length);
+        let result = template;
+
+        for (const key of keys) {
+            // Escape the key for regex, then build the pattern
+            const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Match: {{ key }} with optional whitespace around the key
+            const pattern = new RegExp(`{{\\s*${escapedKey}\\s*}}`, 'g');
+            result = result.replace(pattern, () => replacements[key] ?? fallback);
+        }
+
+        return result;
+    }
+
     // ==================== LLM API METHODS ====================
 
     /**
@@ -312,7 +330,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     async *optimizePrompt(userPrompt) {
         const signal = this.createAbortController();
         const template = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
-        const payload = template.replace(/{{\s*originalPrompt\s*}}/g, userPrompt || '');
+        const payload = LLMClient.batchTemplateReplace(template, { originalPrompt: userPrompt || '' });
         const messages = [{ role: "user", content: payload }];
 
         const headers = {
@@ -362,9 +380,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         let assembledPrompt = null;
         if (originalPrompt && optimizedResult) {
             const systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-            assembledPrompt = systemTemplate
-                .replace('{{originalPrompt}}', originalPrompt)
-                .replace('{{optimizedResult}}', optimizedResult);
+            assembledPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, optimizedResult });
         } else {
             assembledPrompt = LLMClient.DEFAULT_PROMPTS.chat_fallback;
         }
@@ -438,10 +454,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
         const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
 
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult)
-            .replace('{{chatHistory}}', chatHistoryString);
+        const systemPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, currentResult, chatHistory: chatHistoryString });
 
         const messages = [{ role: "system", content: systemPrompt }];
 
@@ -477,9 +490,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         const signal = this.createAbortController();
         let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
 
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult);
+        const systemPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, currentResult });
 
         const messages = [{ role: "user", content: systemPrompt }];
 
