@@ -21,7 +21,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
 ## Instructions:
 
-1. Analize the differences between the Updated User Idea and the "Current Optimized Prompt."
+1. Analyze the differences between the Updated User Idea and the "Current Optimized Prompt."
 2. Craft an updated professionally engineered prompt that incrementally incorporates these ideas and their intent based on your analysis.
 3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:

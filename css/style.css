@@ -668,8 +668,8 @@ button {
 
 /* Library Modal Styles */
 .library-modal-content {
-    width: 1024px;
-    max-width: none;
+    width: 90%;
+    max-width: 1024px;
     height: 80vh;
     max-height: 80vh;
     display: flex;

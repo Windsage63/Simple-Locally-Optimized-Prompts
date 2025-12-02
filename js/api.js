@@ -6,10 +6,9 @@ class LLMClient {
         this.apiKey = localStorage.getItem('slop_api_key') || '';
 
         // Chat-specific config (falls back to primary config if not set)
-        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || 'http://localhost:1234/v1';
-        this.chatModel = localStorage.getItem('slop_chat_model_name') || 'local-model';
-        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || '';
-
+        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || this.baseUrl;
+        this.chatModel = localStorage.getItem('slop_chat_model_name') || this.model;
+        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || this.apiKey;
         this.history = null;
         this.abortController = null;
     }
@@ -170,7 +169,7 @@ The following sections provide context for the discussion:
 
 ## Chat History:
 The chat history between you and the user follows below.`,
-        chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
+        chat_fallback: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.`,
         refine: `# Objective:
 
 ## Role:
@@ -237,7 +236,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
 ## Instructions:
 
-1. Analize the differences between the Updated User Idea and the "Current Optimized Prompt."
+1. Analyze the differences between the Updated User Idea and the "Current Optimized Prompt."
 2. Craft an updated professionally engineered prompt that incrementally incorporates these ideas and their intent based on your analysis.
 3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
@@ -260,7 +259,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     };
 
     static batchTemplateReplace(template, replacements, fallback = '') {
-        if (template == null) return '';
+        if (template === null || template === undefined) return '';
 
         // Sort keys by length (longest first) to avoid partial matches
         const keys = Object.keys(replacements).sort((a, b) => b.length - a.length);

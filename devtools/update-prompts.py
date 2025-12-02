@@ -137,8 +137,9 @@ def update_api_js(api_js_path: Path, new_prompts_js: str) -> bool:
 def main():
     # Determine paths relative to script location
     script_dir = Path(__file__).parent.resolve()
-    prompts_dir = script_dir / 'docs' / 'prompts'
-    api_js_path = script_dir / 'js' / 'api.js'
+    project_root = script_dir.parent
+    prompts_dir = project_root / 'docs' / 'prompts'
+    api_js_path = project_root / 'js' / 'api.js'
     
     # Validate paths
     if not prompts_dir.exists():
