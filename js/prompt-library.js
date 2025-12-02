@@ -1,11 +1,11 @@
 /**
  * Prompt Library - IndexedDB storage for optimized prompts
- * Provides permanent local storage with search by name and tags
+ * Provides permanent local storage with search by name
  */
 class PromptLibrary {
     constructor() {
         this.dbName = 'slop_prompt_library';
-        this.dbVersion = 1;
+        this.dbVersion = 2;
         this.storeName = 'prompts';
         this.db = null;
     }
@@ -40,7 +40,6 @@ class PromptLibrary {
 
                     // Create indexes for searching
                     store.createIndex('name', 'name', { unique: false });
-                    store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
                     store.createIndex('created', 'created', { unique: false });
                     store.createIndex('updated', 'updated', { unique: false });
                 }
@@ -51,20 +50,16 @@ class PromptLibrary {
     /**
      * Parse YAML frontmatter from markdown content
      * @param {string} content - Markdown content with YAML frontmatter
-     * @returns {Object} - { name, description, tags, body }
+     * @returns {Object} - { name, description, body }
      */
     parseYamlFrontmatter(content) {
         const result = {
             name: 'Untitled Prompt',
             description: '',
-            tags: [],
             body: content
         };
 
-        // Remove markdown code fences if present
-        let cleanContent = content.replace(/^```markdown\s*/i, '').replace(/```\s*$/, '');
-
-        const match = cleanContent.match(/^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
+        const match = content.match(/^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
         if (match) {
             try {
                 const yamlText = match[1];
@@ -80,36 +75,13 @@ class PromptLibrary {
 
                 if (data.name) result.name = String(data.name).trim();
                 if (data.description) result.description = String(data.description).trim();
-                if (data.tags && Array.isArray(data.tags)) {
-                    result.tags = data.tags.map(t => String(t).replace(/^#/, '').trim()).filter(t => t);
-                }
                 result.body = body.trim();
             } catch (e) {
-                console.warn('Failed to parse YAML frontmatter:', e);
+                console.warn('No YAML frontmatter found or failed to parse YAML frontmatter:', e);
             }
         }
 
         return result;
-    }
-
-    /**
-     * Rebuild content with updated YAML frontmatter
-     * @param {Object} promptData - { name, description, tags, body }
-     * @returns {string} - Full markdown content with frontmatter
-     */
-    buildContent(promptData) {
-        const tagsYaml = promptData.tags.length > 0
-            ? promptData.tags.map(t => `  - "#${t.replace(/^#/, '')}"`).join('\n')
-            : '  - "#prompt"';
-
-        return `---
-name: ${promptData.name}
-description: ${promptData.description || 'No description'}
-tags:
-${tagsYaml}
----
-
-${promptData.body || ''}`.trim();
     }
 
     /**
@@ -146,21 +118,23 @@ ${promptData.body || ''}`.trim();
         const parsed = this.parseYamlFrontmatter(content);
 
         let name = parsed.name;
-        let finalContent = content; // Preserve original content including frontmatter
+        let finalContent = content;
 
         if (autoUniqueName) {
             const uniqueName = await this.generateUniqueName(name);
             if (uniqueName !== name) {
-                // Only rebuild content if name was changed
+                // Replace name in frontmatter while preserving rest of content
+                finalContent = content.replace(
+                    /^(---[\s\S]*?name:\s*).+?([\s\S]*?---)/,
+                    `$1${uniqueName}$2`
+                );
                 name = uniqueName;
-                finalContent = this.buildContent({ ...parsed, name });
             }
         }
 
         const prompt = {
             name: name,
             description: parsed.description,
-            tags: parsed.tags,
             content: finalContent,
             created: Date.now(),
             updated: Date.now()

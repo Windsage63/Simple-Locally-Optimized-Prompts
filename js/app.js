@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let streamStarted = false;
 
         try {
-            for await (const chunk of client.optimizePromptStream(text)) {
+            for await (const chunk of client.optimizePrompt(text)) {
                 if (!streamStarted) {
                     streamStarted = true;
                     loadingOverlay.classList.add('hidden');
@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const stream = includeChat
-                ? client.refinePromptStream(originalText, currentOutput, client.history)
-                : client.noChatRefinePromptStream(originalText, currentOutput);
+                ? client.refinePrompt(originalText, currentOutput, client.history)
+                : client.noChatRefinePrompt(originalText, currentOutput);
 
             for await (const chunk of stream) {
                 if (!streamStarted) {
@@ -311,6 +311,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             flushRender();
             addToHistory(fullResult);
+
+            // Reset chat for the new refined prompt - clean slate
+            client.history = [];
+            chatHistoryDiv.innerHTML = '<div class="chat-message system"><p><i class="fa-solid fa-rotate-right"></i> Prompt refined. Chat reset for fresh context.</p></div>';
+
             saveState();
         } catch (error) {
             flushRender();
@@ -341,10 +346,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        if (isStreaming) {
-            client.abort();
-            return;
-        }
+        // Safety guard - prevent double-sends during streaming
+        if (isStreaming) return;
 
         appendChatMessage('user', message);
         chatInput.value = '';
@@ -390,11 +393,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    sendChatBtn.addEventListener('click', handleChat);
+    sendChatBtn.onclick = handleChat;
 
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            // Ignore Enter key during streaming to prevent accidental double-sends
+            if (isStreaming) return;
             handleChat();
         }
     });
@@ -442,10 +447,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const content = resultHistory[currentHistoryIndex];
         let filename = 'optimized-prompt.md';
 
-        let cleanContent = content.replace(/^```[a-z]*\s*\n/i, '').replace(/```\s*$/, '').trim();
-
         try {
-            const match = cleanContent.match(/---\s*([\s\S]*?)\s*---/);
+            const match = content.match(/---\s*([\s\S]*?)\s*---/);
             if (match) {
                 const yamlText = match[1];
                 if (yamlText.length <= 50000) {
@@ -459,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Failed to parse YAML for filename:", e);
         }
 
-        downloadFile(cleanContent, filename);
+        downloadFile(content, filename);
     });
 
     // --- History Modal ---
@@ -550,11 +553,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 li.classList.add('selected');
             }
             li.dataset.id = prompt.id;
-            const tagsDisplay = (prompt.tags || []).map(t => '#' + t).join(', ');
             li.innerHTML = `
                 <div class="item-header">
                     <div class="item-name">${escapeHtml(prompt.name)}</div>
-                    <div class="item-tags">${escapeHtml(tagsDisplay)}</div>
                 </div>
                 <div class="item-description">${escapeHtml(prompt.description || 'No description')}</div>
             `;

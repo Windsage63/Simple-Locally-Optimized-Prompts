@@ -668,8 +668,8 @@ button {
 
 /* Library Modal Styles */
 .library-modal-content {
-    width: 75%;
-    max-width: none;
+    width: 90%;
+    max-width: 1024px;
     height: 80vh;
     max-height: 80vh;
     display: flex;
@@ -787,7 +787,7 @@ button {
     color: var(--primary-color);
 }
 
-/* First line: name and tags side by side */
+/* First line: name */
 .prompt-list .list-item .item-header {
     display: flex;
     gap: 0.5rem;
@@ -798,15 +798,6 @@ button {
     flex: 0 0 30%;
     font-weight: 500;
     color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.prompt-list .list-item .item-tags {
-    flex: 1;
-    font-size: 0.75rem;
-    color: var(--primary-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

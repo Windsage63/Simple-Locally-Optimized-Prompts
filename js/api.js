@@ -1,27 +1,16 @@
 class LLMClient {
     constructor() {
-        // Namespaced keys with fallback to old keys
+        // Namespaced keys with fallback to defaults
         this.baseUrl = localStorage.getItem('slop_api_url') || localStorage.getItem('api_url') || 'http://localhost:1234/v1';
         this.model = localStorage.getItem('slop_model_name') || localStorage.getItem('model_name') || 'local-model';
         this.apiKey = localStorage.getItem('slop_api_key') || '';
 
         // Chat-specific config (falls back to primary config if not set)
-        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || '';
-        this.chatModel = localStorage.getItem('slop_chat_model_name') || '';
-        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || '';
-
+        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || this.baseUrl;
+        this.chatModel = localStorage.getItem('slop_chat_model_name') || this.model;
+        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || this.apiKey;
         this.history = null;
         this.abortController = null;
-
-        // Migration: If old keys exist and new ones don't, migrate them
-        if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
-            localStorage.setItem('slop_api_url', localStorage.getItem('api_url'));
-            localStorage.removeItem('api_url');
-        }
-        if (!localStorage.getItem('slop_model_name') && localStorage.getItem('model_name')) {
-            localStorage.setItem('slop_model_name', localStorage.getItem('model_name'));
-            localStorage.removeItem('model_name');
-        }
     }
 
     /**
@@ -110,313 +99,184 @@ class LLMClient {
     static DEFAULT_PROMPTS = {
         optimize: `# Objective:
 
-You are an expert Prompt Engineer and LLM Optimizer. 
-Your task is to take a raw prompt input, analyze it, and rewrite it to be highly effective, clear, and robust.
-The input will be freeform writing, but your output must be in markdown and YAML format.
+## Role:
+
+You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the raw Input Prompt or idea shown below as <ref:original_prompt>, analyze it, and rewrite it to be a highly effective, clear, and robust prompt. The input may either be a structured prompt or a freeform idea from the user, but your output must include a YAML frontmatter and an expertly crafted prompt formatted as listed in our instructions. 
+
+## Input Prompt or Idea:
+
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
 ## Instructions:
 
-1. Analyze the user's freeform request to understand their goal.
-2. Construct a professional prompt based on their request.
-3. Format the output with YAML frontmatter followed by the refined prompt content.
+1. Analyze the <ref:original_prompt> to understand the user's intent or goal.
+2. Craft a professionally engineered prompt based on your understanding from your analysis.
+3. If the input has extensive existing frontmatter, retain it in the new frontmatter.
+4. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+   # Role:
+
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
 
    [Refined Prompt Content]
-4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag".
-5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`,
+
+4. XML tags may be used to surround modular sections of structured prompts and used for reference, i.e., <ref:section_tag>. Any section XML opened must also be closed.
+5. Do not include the <original_prompt> wrapper or placeholder text in the output. Your output should only be the YAML frontmatter and the professionally engineered prompt.
+6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`,
         chat: `# Objective
 
-You are a professional prompt engineer with experience in all types of LLM prompting, who is tasked with evaluating an discussing the users prompts and helping to improve them. 
+## Role:
 
-## Original User Intent:
+You are an expert Prompt Engineer and LLM Optimizer, who is tasked with analyzing, evaluating, and discussing prompts presented to you for discussion with the user. You goal is to help the user improve their prompts based on your expertise and the context provided. 
 
-"""
+The following sections provide context for the discussion:
+    <ref:original_prompt> - The original prompt or idea given by the user before any optimization
+    <ref:current_optimized_result> - The current optimized prompt based on previous iterations
+    The history of the chat between the user and the assistant to this point
+
+## Instructions:
+
+1. Evaluate the "<ref:current_optimized_result>", using the "<ref:original_prompt>" as a grounding reference point
+2. Digest the chat history to understand the user's needs and desires, and understand that the user's goals may evolve as the chat progresses
+3. Leverage your knowledge and experience in the field of prompt engineering to provide expert advice
+4. Avoid common prompting pitfalls
+5. Recommend 2-3 potential refinements.
+6. Chat with the user in an open and friendly manner, explaining your criticisms, recommendations, and the reasoning clearly and concisely.
+7. The "<ref:original_prompt>" and "<ref:current_optimized_result>" are provided below for context.
+8. Remember that you are advising and not rewriting their prompt.
+
+## Input Prompt or Idea:
+
+<original_prompt>
 {{originalPrompt}}
-"""
+</original_prompt> 
 
 ## Current Optimized Result:
 
-"""
+<current_optimized_result>
 {{optimizedResult}}
-"""
+</current_optimized_result>
 
-## Instructions:
-
-1. Use the Original User Intent as a grounding reference point
-2. Understand that the user's goals may evolve as the chat progresses
-3. Leverage your knowledge and experience
-4. Evaluate the Current Optimized Result
-5. Avoid common prompting pitfalls
-6. Recommend 2-3 potential refinements.
-7. Remember that you are advising and not just rewriting their prompt.
-8. Chat with the user in an open and friendly manner, explaining your criticisms, recommendations, and the reasoning for each, clearly and concisely.
-`,
-        chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
+## Chat History:
+The chat history between you and the user follows below.`,
+        chat_fallback: `You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.`,
         refine: `# Objective:
 
+## Role:
+
 You are an expert Prompt Engineer. 
-Your task is to incrementally REFINE the Current Optimized Prompt based on the user's feedback in the chat history.
+Your task is to incrementally REFINE the "Current Optimized Prompt" based on the user's feedback in the "Chat History", using the "Original User Idea" as a grounding reference. The goal is to better align the prompt with the recommendations and the user's evolving needs. The "Original User Idea", the "Chat History", and the "Current Optimized Prompt" are included in the context below.
 
 ## Original User Idea:
 
-"{{originalPrompt}}"
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
 ## Current Optimized Prompt:
 
+"""
 {{currentResult}}
+"""
 
-## User Feedback (Chat History):
+## Chat History:
 
+"""
 {{chatHistory}}
+"""
 
 ## Instructions:
 
-1. Analyze the chat history to understand what changes the user wants.
-2. Compare the new desires and changes to the existing "Current Optimized Prompt"
-3. Construct an updated professional prompt, incorporating the new changes to incrementally incorporate these new ideas.
-4. Format the output with YAML frontmatter followed by the refined prompt content.
+1. Analyze the "Chat History" to understand the recommendations and what the "user" wants.
+2. Compare the new desires and changes to the existing "Current Optimized Prompt."
+3. Craft an updated professionally engineered prompt that incrementally incorporates these new ideas and their intent based on your analysis.
+4. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+   # Role:
+
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
 
    [Refined Prompt Content]
-5. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`,
-        refine_no_chat: `# Objective:
+
+5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`,
+        refine_no_chat: `# Role:
 
 You are an expert Prompt Engineer. 
-Your task is to REFINE the Current Optimized Prompt based on the Updated User Idea.
+Your task is to incrementally REFINE the "Current Optimized Prompt" based on the "Original User Idea" as a grounding reference. The goal is to better align the prompt with the intent of the "Original User Idea". The "Original User Idea" and the "Current Optimized Prompt" are included in the context below.
 
-## Updated User Idea:
+---
 
-"{{originalPrompt}}"
+<original_prompt>
+{{originalPrompt}}
+</original_prompt>
 
-## Current Optimized Prompt:
+---
 
 {{currentResult}}
 
+---
+
 ## Instructions:
 
-1. Compare the Updated User Idea with the Current Optimized Prompt.
-2. Adjust the prompt to better match the new requirements in the User Idea.
-3. Format the output with YAML frontmatter followed by the refined prompt content.
+1. Analyze the differences between the Updated User Idea and the "Current Optimized Prompt."
+2. Craft an updated professionally engineered prompt that incrementally incorporates these ideas and their intent based on your analysis.
+3. Format the output with YAML frontmatter followed by the refined prompt content in markdown.
    Format:
    ---
    name: [Short Name]
    description: [Concise Purpose of prompt]
    argument-hint: [Hint for users using the prompt]
-   tags:
-     - "#prompt"
-     - [Optional other tags]
    ---
 
-   # Instructions:
+    # Role
 
-   [Refined Prompt Content]
-4. Always include the "#prompt" tag in the tags list. Tags must be in the format "#tag"
-5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`
+   [the role to be assumed and the general purpose]
+
+   ## Instructions:
+
+   [Updated Refined Prompt Content]
+
+4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`
+
     };
 
-    async optimizePrompt(userPrompt) {
-        const systemPrompt = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+    static batchTemplateReplace(template, replacements, fallback = '') {
+        if (template === null || template === undefined) return '';
 
-        const messages = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-        ];
+        // Sort keys by length (longest first) to avoid partial matches
+        const keys = Object.keys(replacements).sort((a, b) => b.length - a.length);
+        let result = template;
 
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-            };
-            if (this.apiKey) {
-                headers['Authorization'] = `Bearer ${this.apiKey}`;
-            }
-
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    model: this.model,
-                    messages: messages,
-                    temperature: 0.7,
-                    stream: false
-                })
-            });
-
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`API Error: ${response.status} - ${err}`);
-            }
-
-            const data = await response.json();
-            return data.choices[0].message.content;
-
-        } catch (error) {
-            console.error('Optimization failed:', error);
-            throw error;
+        for (const key of keys) {
+            // Escape the key for regex, then build the pattern
+            const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Match: {{ key }} with optional whitespace around the key
+            const pattern = new RegExp(`{{\\s*${escapedKey}\\s*}}`, 'g');
+            result = result.replace(pattern, () => replacements[key] ?? fallback);
         }
+
+        return result;
     }
 
-    async chat(userMessage, originalPrompt = null, optimizedResult = null) {
-        if (!this.history) {
-            this.history = [];
-        }
-
-        this.history.push({ role: "user", content: userMessage });
-
-        // Build messages array for API call
-        const messages = [];
-
-        // Add system message with context if prompts are provided
-        if (originalPrompt && optimizedResult) {
-            let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-            const systemContent = systemTemplate
-                .replace('{{originalPrompt}}', originalPrompt)
-                .replace('{{optimizedResult}}', optimizedResult);
-
-            const systemMessage = {
-                role: "system",
-                content: systemContent
-            };
-            messages.push(systemMessage);
-        } else {
-            // Fallback system message if no context
-            messages.push({
-                role: "system",
-                content: LLMClient.DEFAULT_PROMPTS.chat_fallback
-            });
-        }
-
-        // Add chat history
-        messages.push(...this.history);
-
-        // Use chat-specific config with fallback to primary config
-        const chatUrl = this.chatBaseUrl || this.baseUrl;
-        const chatModel = this.chatModel || this.model;
-        const chatKey = this.chatApiKey || this.apiKey;
-
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (chatKey) {
-                headers['Authorization'] = `Bearer ${chatKey}`;
-            }
-
-            const response = await fetch(`${chatUrl}/chat/completions`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    model: chatModel,
-                    messages: messages,
-                    temperature: 0.7
-                })
-            });
-
-            if (!response.ok) throw new Error('Chat API Error');
-            const data = await response.json();
-            const assistantMessage = data.choices[0].message.content;
-
-            this.history.push({ role: "assistant", content: assistantMessage });
-            return assistantMessage;
-        } catch (error) {
-            console.error('Chat failed:', error);
-            throw error;
-        }
-    }
-
-    async refinePrompt(originalPrompt, currentResult, chatHistory) {
-        let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
-
-        const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
-
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult)
-            .replace('{{chatHistory}}', chatHistoryString);
-
-        const messages = [{ role: "system", content: systemPrompt }];
-
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (this.apiKey) {
-                headers['Authorization'] = `Bearer ${this.apiKey}`;
-            }
-
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    model: this.model,
-                    messages: messages,
-                    temperature: 0.7
-                })
-            });
-
-            if (!response.ok) throw new Error('Refine API Error');
-            const data = await response.json();
-            return data.choices[0].message.content;
-        } catch (error) {
-            console.error('Refine failed:', error);
-            throw error;
-        }
-    }
-
-    async noChatRefinePrompt(originalPrompt, currentResult) {
-        let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
-
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult);
-
-        const messages = [{ role: "system", content: systemPrompt }];
-
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (this.apiKey) {
-                headers['Authorization'] = `Bearer ${this.apiKey}`;
-            }
-
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    model: this.model,
-                    messages: messages,
-                    temperature: 0.7
-                })
-            });
-
-            if (!response.ok) throw new Error('Refine (No Chat) API Error');
-            const data = await response.json();
-            return data.choices[0].message.content;
-        } catch (error) {
-            console.error('Refine (No Chat) failed:', error);
-            throw error;
-        }
-    }
-
-    // ==================== STREAMING METHODS ====================
+    // ==================== LLM API METHODS ====================
 
     /**
      * Parse SSE stream and yield content chunks
@@ -458,24 +318,20 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
     }
 
     /**
-     * Streaming version of optimizePrompt
+     * Optimize a user prompt using the LLM (streaming)
+     * @param {string} userPrompt - The raw user prompt to optimize
      * @yields {string} Content chunks as they arrive
      */
-    async *optimizePromptStream(userPrompt) {
+    async *optimizePrompt(userPrompt) {
         const signal = this.createAbortController();
-        const systemPrompt = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
-
-        const messages = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-        ];
+        const template = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+        const payload = LLMClient.batchTemplateReplace(template, { originalPrompt: userPrompt || '' });
+        const messages = [{ role: "user", content: payload }];
 
         const headers = {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         };
-        if (this.apiKey) {
-            headers['Authorization'] = `Bearer ${this.apiKey}`;
-        }
+        if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
 
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
             method: 'POST',
@@ -488,17 +344,18 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
             }),
             signal
         });
-
         if (!response.ok) {
             const err = await response.text();
             throw new Error(`API Error: ${response.status} - ${err}`);
         }
-
         yield* this.parseSSEStream(response);
     }
 
     /**
-     * Streaming version of chat
+     * Chat with the LLM about prompt refinement (streaming)
+     * @param {string} userMessage - The user's chat message
+     * @param {string|null} originalPrompt - The original user prompt for context
+     * @param {string|null} optimizedResult - The current optimized result for context
      * @yields {string} Content chunks as they arrive
      */
     async *chatStream(userMessage, originalPrompt = null, optimizedResult = null) {
@@ -508,31 +365,44 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
             this.history = [];
         }
 
+        // Persist the user's message to the saved history (unchanged)
         this.history.push({ role: "user", content: userMessage });
 
-        // Build messages array for API call
-        const messages = [];
+        // Work on a copy to avoid editing the saved history
+        const historyCopy = this.history.map(m => ({ role: m.role, content: m.content }));
 
-        // Add system message with context if prompts are provided
+        // Prepare the assembled prompt text (we won't send it as a system role)
+        let assembledPrompt = null;
         if (originalPrompt && optimizedResult) {
-            let systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
-            const systemContent = systemTemplate
-                .replace('{{originalPrompt}}', originalPrompt)
-                .replace('{{optimizedResult}}', optimizedResult);
-
-            messages.push({
-                role: "system",
-                content: systemContent
-            });
+            const systemTemplate = localStorage.getItem('slop_prompt_chat') || LLMClient.DEFAULT_PROMPTS.chat;
+            assembledPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, optimizedResult });
         } else {
-            messages.push({
-                role: "system",
-                content: LLMClient.DEFAULT_PROMPTS.chat_fallback
-            });
+            assembledPrompt = LLMClient.DEFAULT_PROMPTS.chat_fallback;
         }
 
-        // Add chat history
-        messages.push(...this.history);
+        // Find the first user message to attach the assembled prompt into
+        let firstUserIdx = historyCopy.findIndex(m => m.role === 'user');
+        if (firstUserIdx === -1) {
+            // no user message found; create one at the beginning
+            historyCopy.unshift({ role: 'user', content: assembledPrompt });
+            firstUserIdx = 0;
+        } else {
+            // prefix the assembled prompt into the first user message
+            historyCopy[firstUserIdx].content = assembledPrompt + '\n\n' + historyCopy[firstUserIdx].content;
+        }
+
+        // Remove any system role entries from the copy and merge consecutive user messages
+        const merged = [];
+        for (const msg of historyCopy) {
+            if (msg.role === 'system') continue;
+            if (merged.length && merged[merged.length - 1].role === 'user' && msg.role === 'user') {
+                merged[merged.length - 1].content += '\n\n' + msg.content;
+            } else {
+                merged.push({ role: msg.role, content: msg.content });
+            }
+        }
+
+        const messages = merged;
 
         // Use chat-specific config with fallback to primary config
         const chatUrl = this.chatBaseUrl || this.baseUrl;
@@ -540,9 +410,7 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
         const chatKey = this.chatApiKey || this.apiKey;
 
         const headers = { 'Content-Type': 'application/json' };
-        if (chatKey) {
-            headers['Authorization'] = `Bearer ${chatKey}`;
-        }
+        if (chatKey) headers['Authorization'] = `Bearer ${chatKey}`;
 
         const response = await fetch(`${chatUrl}/chat/completions`, {
             method: 'POST',
@@ -564,24 +432,24 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
             yield chunk;
         }
 
-        // Add complete response to history
+        // Save assistant response back to the original history (without the assembled prompt)
         this.history.push({ role: "assistant", content: fullResponse });
     }
 
     /**
-     * Streaming version of refinePrompt
+     * Refine a prompt based on chat history (streaming)
+     * @param {string} originalPrompt - The original user prompt
+     * @param {string} currentResult - The current optimized prompt
+     * @param {Array} chatHistory - Array of chat messages for context
      * @yields {string} Content chunks as they arrive
      */
-    async *refinePromptStream(originalPrompt, currentResult, chatHistory) {
+    async *refinePrompt(originalPrompt, currentResult, chatHistory) {
         const signal = this.createAbortController();
         let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
 
         const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
 
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult)
-            .replace('{{chatHistory}}', chatHistoryString);
+        const systemPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, currentResult, chatHistory: chatHistoryString });
 
         const messages = [{ role: "system", content: systemPrompt }];
 
@@ -608,18 +476,18 @@ Your task is to REFINE the Current Optimized Prompt based on the Updated User Id
     }
 
     /**
-     * Streaming version of noChatRefinePrompt
+     * Refine a prompt without chat history (streaming)
+     * @param {string} originalPrompt - The original user prompt
+     * @param {string} currentResult - The current optimized prompt
      * @yields {string} Content chunks as they arrive
      */
-    async *noChatRefinePromptStream(originalPrompt, currentResult) {
+    async *noChatRefinePrompt(originalPrompt, currentResult) {
         const signal = this.createAbortController();
         let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
 
-        const systemPrompt = systemTemplate
-            .replace('{{originalPrompt}}', originalPrompt)
-            .replace('{{currentResult}}', currentResult);
+        const systemPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, currentResult });
 
-        const messages = [{ role: "system", content: systemPrompt }];
+        const messages = [{ role: "user", content: systemPrompt }];
 
         const headers = { 'Content-Type': 'application/json' };
         if (this.apiKey) {
