@@ -133,13 +133,13 @@ You are an expert Prompt Engineer and LLM Optimizer. Your task is to take the ra
 
 4. XML tags may be used to surround modular sections of structured prompts and used for reference, i.e., <ref:section_tag>. Any section XML opened must also be closed.
 5. Do not include the <original_prompt> wrapper or placeholder text in the output. Your output should only be the YAML frontmatter and the professionally engineered prompt.
-6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`,
+6. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`,
         chat: `# Objective
 
 ## Role:
 
 You are an expert Prompt Engineer and LLM Optimizer, who is tasked with analyzing, evaluating, and discussing prompts presented to you for discussion with the user. You goal is to help the user improve their prompts based on your expertise and the context provided. 
+
 The following sections provide context for the discussion:
     <ref:original_prompt> - The original prompt or idea given by the user before any optimization
     <ref:current_optimized_result> - The current optimized prompt based on previous iterations
@@ -169,8 +169,7 @@ The following sections provide context for the discussion:
 </current_optimized_result>
 
 ## Chat History:
-The chat history between you and the user follows below. 
-`,
+The chat history between you and the user follows below.`,
         chat_fallback: "You are a helpful AI assistant helping the user to evaluate and plan refinements to their prompt. Be concise and helpful.",
         refine: `# Objective:
 
@@ -218,11 +217,8 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
    [Refined Prompt Content]
 
-5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`,
-        refine_no_chat: `# Objective:
-
-# Role:
+5. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`,
+        refine_no_chat: `# Role:
 
 You are an expert Prompt Engineer. 
 Your task is to incrementally REFINE the "Current Optimized Prompt" based on the "Original User Idea" as a grounding reference. The goal is to better align the prompt with the intent of the "Original User Idea". The "Original User Idea" and the "Current Optimized Prompt" are included in the context below.
@@ -259,8 +255,8 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
    [Updated Refined Prompt Content]
 
-4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.
-`
+4. Do NOT add any other conversational text. Return ONLY the YAML frontmatter and prompt content.`
+
     };
 
     static batchTemplateReplace(template, replacements, fallback = '') {
