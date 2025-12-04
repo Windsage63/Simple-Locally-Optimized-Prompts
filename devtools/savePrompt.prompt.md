@@ -1,8 +1,4 @@
----
-name: savePrompt
-description: Generalize the current discussion into a reusable prompt and save it as a file
-tools: [ 'edit', 'search' ]
----
+
 Generalize the current discussion into a reusable prompt that can be applied in similar contexts.
 
 Think step by step:
@@ -19,10 +15,9 @@ Think step by step:
 Here's an example of the expected output format:
 ```
 ---
-name: ${The concise title in camelCase format. You can only use letters, digits, underscores, hyphens, and periods}
+title: ${The concise title in camelCase format. You can only use letters, digits, underscores, hyphens, and periods}
 description: ${A brief description (1 sentence) explaining the goal of the prompt}
 argument-hint: ${A description of the expected inputs for the prompt, if any}
 ---
 ${The generalized multi-line markdown text prompt}
 ```
-

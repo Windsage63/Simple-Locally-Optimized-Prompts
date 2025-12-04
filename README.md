@@ -114,5 +114,5 @@ MIT
 
 ## 🛡️ PII Safety Audit
 
-- [PII Safety Audit](PII-Safety-Audit.md)
+- [PII Safety Audit](docs/PII-Safety-Audit.md)
 - When using localhost, this app does not access the internet, and does not collect any data.

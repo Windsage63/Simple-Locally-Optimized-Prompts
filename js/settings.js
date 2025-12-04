@@ -82,6 +82,74 @@ function initSettings(client) {
     let modelSelectListenerAdded = false;
     let chatModelSelectListenerAdded = false;
 
+    /**
+     * Setup model fetcher button behavior
+     */
+    function setupModelFetcher(btn, urlInput, keyInput, select, nameInput, isChat = false) {
+        btn.addEventListener('click', async () => {
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                const url = urlInput.value.trim();
+                const key = keyInput.value.trim();
+
+                if (!url) {
+                    alert('Please enter an API URL first.');
+                    return;
+                }
+
+                let models = [];
+                if (isChat) {
+                    models = await client.getModelsForEndpoint(url, key);
+                } else {
+                    // Use temp client for main API to avoid changing global state before save
+                    const tempClient = new LLMClient();
+                    tempClient.baseUrl = url;
+                    tempClient.apiKey = key; // Ensure key is used if provided
+                    models = await tempClient.getModels();
+                }
+
+                if (models && models.length > 0) {
+                    select.innerHTML = '';
+                    models.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.id;
+                        option.textContent = m.id;
+                        select.appendChild(option);
+                    });
+
+                    select.classList.remove('hidden');
+                    nameInput.classList.add('hidden');
+
+                    // Add listener only once per select element
+                    const listenerFlag = isChat ? chatModelSelectListenerAdded : modelSelectListenerAdded;
+                    if (!listenerFlag) {
+                        select.addEventListener('change', () => {
+                            nameInput.value = select.value;
+                        });
+                        if (isChat) chatModelSelectListenerAdded = true;
+                        else modelSelectListenerAdded = true;
+                    }
+
+                    select.value = models[0].id;
+                    nameInput.value = models[0].id;
+                } else {
+                    alert('No models found or empty list returned.');
+                }
+            } catch (error) {
+                alert('Failed to fetch models. Check URL.');
+                console.error(error);
+            } finally {
+                btn.innerHTML = originalIcon;
+            }
+        });
+    }
+
+    // Setup fetchers
+    setupModelFetcher(fetchModelsBtn, apiUrlInput, apiKeyInput, modelSelect, modelNameInput, false);
+    setupModelFetcher(chatFetchModelsBtn, chatApiUrlInput, chatApiKeyInput, chatModelSelect, chatModelNameInput, true);
+
     // --- Word Wrap ---
 
     function applyWordWrap(enabled) {
@@ -154,97 +222,7 @@ function initSettings(client) {
     });
 
     // --- Fetch Models ---
-
-    fetchModelsBtn.addEventListener('click', async () => {
-        const originalIcon = fetchModelsBtn.innerHTML;
-        fetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        try {
-            const tempClient = new LLMClient();
-            tempClient.baseUrl = apiUrlInput.value.trim();
-
-            const models = await tempClient.getModels();
-
-            if (models && models.length > 0) {
-                modelSelect.innerHTML = '';
-                models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.id;
-                    option.textContent = m.id;
-                    modelSelect.appendChild(option);
-                });
-
-                modelSelect.classList.remove('hidden');
-                modelNameInput.classList.add('hidden');
-
-                // Add listener only once
-                if (!modelSelectListenerAdded) {
-                    modelSelect.addEventListener('change', () => {
-                        modelNameInput.value = modelSelect.value;
-                    });
-                    modelSelectListenerAdded = true;
-                }
-
-                modelSelect.value = models[0].id;
-                modelNameInput.value = models[0].id;
-            } else {
-                alert('No models found or empty list returned.');
-            }
-        } catch (error) {
-            alert('Failed to fetch models. Check URL.');
-            console.error(error);
-        } finally {
-            fetchModelsBtn.innerHTML = originalIcon;
-        }
-    });
-
-    chatFetchModelsBtn.addEventListener('click', async () => {
-        const originalIcon = chatFetchModelsBtn.innerHTML;
-        chatFetchModelsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        try {
-            const chatUrl = chatApiUrlInput.value.trim();
-            const chatKey = chatApiKeyInput.value.trim();
-
-            if (!chatUrl) {
-                alert('Please enter a Chat API URL first.');
-                return;
-            }
-
-            const models = await client.getModelsForEndpoint(chatUrl, chatKey);
-
-            if (models && models.length > 0) {
-                chatModelSelect.innerHTML = '';
-                models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.id;
-                    option.textContent = m.id;
-                    chatModelSelect.appendChild(option);
-                });
-
-                chatModelSelect.classList.remove('hidden');
-                chatModelNameInput.classList.add('hidden');
-
-                // Add listener only once
-                if (!chatModelSelectListenerAdded) {
-                    chatModelSelect.addEventListener('change', () => {
-                        chatModelNameInput.value = chatModelSelect.value;
-                    });
-                    chatModelSelectListenerAdded = true;
-                }
-
-                chatModelSelect.value = models[0].id;
-                chatModelNameInput.value = models[0].id;
-            } else {
-                alert('No models found or empty list returned.');
-            }
-        } catch (error) {
-            alert('Failed to fetch models. Check Chat API URL.');
-            console.error(error);
-        } finally {
-            chatFetchModelsBtn.innerHTML = originalIcon;
-        }
-    });
+    // (Logic moved to setupModelFetcher above)
 
     // --- Prompt Settings ---
 

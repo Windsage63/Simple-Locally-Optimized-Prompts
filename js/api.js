@@ -32,51 +32,41 @@ class LLMClient {
         return this.abortController.signal;
     }
 
-    updateConfig(url, model, apiKey, saveKey) {
-        this.baseUrl = url;
-        this.model = model;
-        this.apiKey = apiKey;
+    _updateConfig(prefix, url, model, apiKey, saveKey) {
+        const urlKey = prefix ? `slop_${prefix}_api_url` : 'slop_api_url';
+        const modelKey = prefix ? `slop_${prefix}_model_name` : 'slop_model_name';
+        const apiKeyKey = prefix ? `slop_${prefix}_api_key` : 'slop_api_key';
 
-        localStorage.setItem('slop_api_url', url);
-        localStorage.setItem('slop_model_name', model);
+        if (prefix === 'chat') {
+            this.chatBaseUrl = url;
+            this.chatModel = model;
+            this.chatApiKey = apiKey;
+        } else {
+            this.baseUrl = url;
+            this.model = model;
+            this.apiKey = apiKey;
+        }
+
+        localStorage.setItem(urlKey, url);
+        localStorage.setItem(modelKey, model);
 
         if (saveKey) {
-            localStorage.setItem('slop_api_key', apiKey);
+            localStorage.setItem(apiKeyKey, apiKey);
         } else {
-            localStorage.removeItem('slop_api_key');
+            localStorage.removeItem(apiKeyKey);
         }
+    }
+
+    updateConfig(url, model, apiKey, saveKey) {
+        this._updateConfig('', url, model, apiKey, saveKey);
     }
 
     updateChatConfig(url, model, apiKey, saveKey) {
-        this.chatBaseUrl = url;
-        this.chatModel = model;
-        this.chatApiKey = apiKey;
-
-        localStorage.setItem('slop_chat_api_url', url);
-        localStorage.setItem('slop_chat_model_name', model);
-
-        if (saveKey) {
-            localStorage.setItem('slop_chat_api_key', apiKey);
-        } else {
-            localStorage.removeItem('slop_chat_api_key');
-        }
+        this._updateConfig('chat', url, model, apiKey, saveKey);
     }
 
     async getModels() {
-        try {
-            const headers = {};
-            if (this.apiKey) {
-                headers['Authorization'] = `Bearer ${this.apiKey}`;
-            }
-
-            const response = await fetch(`${this.baseUrl}/models`, { headers });
-            if (!response.ok) throw new Error('Failed to fetch models');
-            const data = await response.json();
-            return data.data || [];
-        } catch (error) {
-            console.error('Error fetching models:', error);
-            throw error;
-        }
+        return this.getModelsForEndpoint(this.baseUrl, this.apiKey);
     }
 
     async getModelsForEndpoint(baseUrl, apiKey) {
@@ -349,6 +339,35 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     // ==================== LLM API METHODS ====================
 
     /**
+     * Generic streaming request handler
+     */
+    async *_streamRequest(endpoint, messages, model, apiKey, signal) {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+        const response = await fetch(`${endpoint}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                temperature: 0.7,
+                stream: true
+            }),
+            signal
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`API Error: ${response.status} - ${err}`);
+        }
+
+        yield* this.parseSSEStream(response);
+    }
+
+    /**
      * Parse SSE stream and yield content chunks
      */
     async *parseSSEStream(response) {
@@ -398,27 +417,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         const payload = LLMClient.batchTemplateReplace(template, { originalPrompt: userPrompt || '' });
         const messages = [{ role: "user", content: payload }];
 
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
-
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: this.model,
-                messages: messages,
-                temperature: 0.7,
-                stream: true
-            }),
-            signal
-        });
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`API Error: ${response.status} - ${err}`);
-        }
-        yield* this.parseSSEStream(response);
+        yield* this._streamRequest(this.baseUrl, messages, this.model, this.apiKey, signal);
     }
 
     /**
@@ -479,25 +478,8 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         const chatModel = this.chatModel || this.model;
         const chatKey = this.chatApiKey || this.apiKey;
 
-        const headers = { 'Content-Type': 'application/json' };
-        if (chatKey) headers['Authorization'] = `Bearer ${chatKey}`;
-
-        const response = await fetch(`${chatUrl}/chat/completions`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: chatModel,
-                messages: messages,
-                temperature: 0.7,
-                stream: true
-            }),
-            signal
-        });
-
-        if (!response.ok) throw new Error('Chat API Error');
-
         let fullResponse = '';
-        for await (const chunk of this.parseSSEStream(response)) {
+        for await (const chunk of this._streamRequest(chatUrl, messages, chatModel, chatKey, signal)) {
             fullResponse += chunk;
             yield chunk;
         }
@@ -523,26 +505,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
         const messages = [{ role: "system", content: systemPrompt }];
 
-        const headers = { 'Content-Type': 'application/json' };
-        if (this.apiKey) {
-            headers['Authorization'] = `Bearer ${this.apiKey}`;
-        }
-
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: this.model,
-                messages: messages,
-                temperature: 0.7,
-                stream: true
-            }),
-            signal
-        });
-
-        if (!response.ok) throw new Error('Refine API Error');
-
-        yield* this.parseSSEStream(response);
+        yield* this._streamRequest(this.baseUrl, messages, this.model, this.apiKey, signal);
     }
 
     /**
@@ -559,25 +522,6 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
         const messages = [{ role: "user", content: systemPrompt }];
 
-        const headers = { 'Content-Type': 'application/json' };
-        if (this.apiKey) {
-            headers['Authorization'] = `Bearer ${this.apiKey}`;
-        }
-
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: this.model,
-                messages: messages,
-                temperature: 0.7,
-                stream: true
-            }),
-            signal
-        });
-
-        if (!response.ok) throw new Error('Refine (No Chat) API Error');
-
-        yield* this.parseSSEStream(response);
+        yield* this._streamRequest(this.baseUrl, messages, this.model, this.apiKey, signal);
     }
 }
