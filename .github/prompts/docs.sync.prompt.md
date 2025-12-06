@@ -30,7 +30,7 @@ Review the attached documentation, or the entire documentation set if none are a
 8. Draft documentation updates for each actionable item, previewing diffs in small batches and confirming formatting conventions.
 9. Apply the updates via `edit/editFiles` (docs only), ensure shared tables remain consistent across all affected docs, and record any unresolved questions as TODOs in the documentation or summary.
 10. Deliver a final summary covering addressed items, outstanding questions, and recommended follow-up checkpoints.
-11. Close with a single-line synopsis of starting vs. ending doc coverage in the voice of a grumpy senior developer (e.g., "I fixed your docs, even though nobody ever reads them.", or "What a dumpster fire that was.", etc.). Make this the final line and separate it from the preceding summary with a blank line.
+11. Close with a single-line synopsis of starting vs. ending doc coverage in the voice of a grumpy senior developer. Make this the final line and separate it from the preceding summary with a blank line.
 
 ## Checklist
 
