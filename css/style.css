@@ -299,8 +299,69 @@ button {
     display: flex;
     gap: 0.75rem;
     background: rgba(0, 0, 0, 0.1);
-    justify-content: flex-end;
-    /* Align buttons to the right */
+    align-items: center;
+}
+
+/* Toggle Switch */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: auto;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 0;
+}
+
+.checkbox-wrapper input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: var(--primary-color);
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked::after {
+    transform: translateX(16px);
+    background: var(--primary-color);
+}
+
+.checkbox-wrapper label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Action Bar Button Sizing */
+#optimize-btn {
+    flex: 0 0 40%;
+    justify-content: center;
+}
+
+#refine-btn {
+    flex: 1;
+    justify-content: center;
 }
 
 .input-area {
