@@ -138,7 +138,7 @@ function initSettings(client) {
                     alert('No models found or empty list returned.');
                 }
             } catch (error) {
-                alert('Failed to fetch models. Check URL.');
+                alert(`Failed to fetch models: ${error.message}\nCheck URL and ensure server is running.`);
                 console.error(error);
             } finally {
                 btn.innerHTML = originalIcon;
