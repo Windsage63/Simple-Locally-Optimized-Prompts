@@ -1,11 +1,10 @@
-![](docs/img/logos/SLOP_Banner_2228x640.png)
----
+# ![Simple Locally Optimized Prompts (SLOP) 🧲](docs/img/logos/SLOP_Banner_2228x640.png)
+
 ## *A frontend-only web application to help you craft, discuss, refine, and revise your AI prompts.*
 
 ## 💻Main Screen ![SLOP UI](docs/img/screenshot.png)
 
-# Simple Locally Optimized Prompts (SLOP) 🧲 
-
+# Simple Locally Optimized Prompts (SLOP) 🧲
 
 ## ✨ Features
 
@@ -51,8 +50,8 @@ You need an LLM API connection or a local LLM server running that is compatible 
 
 ## 🚀 Setup & Usage
 
-1.  **Open the App**: Simply open `index.html` in your web browser. No installation or build server needed.
-2.  **Configure API**:
+1. **Open the App**: Simply open `index.html` in your web browser. No installation or build server needed.
+2. **Configure API**:
     - Click the **Settings (Gear)** icon in the top right.
     - **Optimize / Refine API** (Required):
       - Enter your local server URL (e.g., `http://localhost:1234/v1`) or an external API endpoint.
@@ -64,24 +63,24 @@ You need an LLM API connection or a local LLM server running that is compatible 
       - Leave empty to use the same settings as the Optimize/Refine API.
     - Click **Save**.
     - **CORS Note**: If you connect to an LLM running on another device, ensure its server is configured to allow cross‑origin requests from your browser (CORS).
-3.  **Optimize a Prompt**:
+3. **Optimize a Prompt**:
     - Type your idea in the main input box (e.g., "Write a prompt to create a python script for a snake game").
     - Or, paste an existing prompt into the main input box.
     - Click **Optimize**.
     - The structured result will appear in the right panel.
-4.  **Refine with Chat**:
+4. **Refine with Chat**:
     - Use the chat window at the bottom left to discuss changes (e.g., "Make it object-oriented").
     - The **Include Chat** checkbox controls whether chat history is used during refinement:
       - **Checked**: Refinement incorporates the full chat discussion.
       - **Unchecked**: Refinement uses only the updated input text vs. current result (useful for quick iterations without chat).
     - Click **Refine** to update the result.
-5.  **Browse History**:
+5. **Browse History**:
     - Use the `<` and `>` arrows in the output header to view previous versions.
     - If you want to revert to a previous version, simply arrow to the place you want to resume, and continue to refine from there.
-6.  **Manage Sessions**:
+6. **Manage Sessions**:
     - Click the **History (Clock)** icon in the header to view saved sessions.
     - Switch between sessions or delete old ones to keep your workspace organized.
-7.  **Customize AI Behavior**:
+7. **Customize AI Behavior**:
     - In the **Settings** menu, click **Customize System Prompts**.
     - Modify the instructions for:
       - **Optimize**: Initial prompt generation
@@ -93,6 +92,7 @@ You need an LLM API connection or a local LLM server running that is compatible 
 ## 🔒 Data Storage & Privacy
 
 All stored information (API settings, chat history, and optimization results) is **only stored in your browser’s local storage (localStorage/sessionStorage)**. This data persists through page reloads for your convenience, but can easily be erased at any time by clearing the site data for this site in your browser's settings.
+
 - **API Keys**: You have full control over API key storage. Choose to save it persistently or keep it in session memory only. Both the Optimize/Refine API and Chat Assistant API have independent key storage options.
 - **Key Storage**: Keys saved persistently are stored client-side in localStorage. Keys stored in localStorage are not encrypted and are accessible to scripts running in the same browser origin. Keys saved in session memory are stored only for the current browser session (in memory or sessionStorage) and are cleared when the page is reloaded or the tab is closed.
 - **Stored Data**: Settings are stored with namespaced keys for Optimize/Refine; for Chat Assistant; plus session data and UI preferences.
