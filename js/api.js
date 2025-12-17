@@ -37,17 +37,20 @@ class LLMClient {
         const modelKey = prefix ? `slop_${prefix}_model_name` : 'slop_model_name';
         const apiKeyKey = prefix ? `slop_${prefix}_api_key` : 'slop_api_key';
 
+        // Remove trailing slashes from URL
+        const cleanUrl = url ? url.replace(/\/+$/, '') : url;
+
         if (prefix === 'chat') {
-            this.chatBaseUrl = url;
+            this.chatBaseUrl = cleanUrl;
             this.chatModel = model;
             this.chatApiKey = apiKey;
         } else {
-            this.baseUrl = url;
+            this.baseUrl = cleanUrl;
             this.model = model;
             this.apiKey = apiKey;
         }
 
-        localStorage.setItem(urlKey, url);
+        localStorage.setItem(urlKey, cleanUrl);
         localStorage.setItem(modelKey, model);
 
         if (saveKey) {
@@ -76,8 +79,11 @@ class LLMClient {
                 headers['Authorization'] = `Bearer ${apiKey}`;
             }
 
-            const response = await fetch(`${baseUrl}/models`, { headers });
-            if (!response.ok) throw new Error('Failed to fetch models');
+            // Ensure no trailing slash
+            const cleanUrl = baseUrl ? baseUrl.replace(/\/+$/, '') : baseUrl;
+
+            const response = await fetch(`${cleanUrl}/models`, { headers });
+            if (!response.ok) throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
             const data = await response.json();
             return data.data || [];
         } catch (error) {
@@ -358,7 +364,10 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         };
         if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-        const response = await fetch(`${endpoint}/chat/completions`, {
+        // Ensure no trailing slash
+        const cleanEndpoint = endpoint ? endpoint.replace(/\/+$/, '') : endpoint;
+
+        const response = await fetch(`${cleanEndpoint}/chat/completions`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
