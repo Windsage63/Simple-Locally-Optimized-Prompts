@@ -58,12 +58,13 @@ class SessionManager {
         session.updated = Date.now();
         
         // Generate a name if it's the default one and we have input
-        if (session.name === 'New Session' && session.promptInput) {
-            session.name = session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '');
-        } else if (session.promptInput && session.name !== session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '')) {
-             // Update name if prompt changes, but maybe we want to be smarter about this? 
-             // For now, let's keep the name synced with the first few chars of the prompt if it hasn't been manually renamed (which we don't support yet anyway)
-             session.name = session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '');
+        if (session.promptInput) {
+            const trimmedInput = session.promptInput.trim();
+            const generatedName = trimmedInput.slice(0, 30) + (trimmedInput.length > 30 ? '...' : '');
+            
+            if (session.name === 'New Session' || !session.name) {
+                session.name = generatedName || 'New Session';
+            }
         }
 
         sessions[session.id] = session;

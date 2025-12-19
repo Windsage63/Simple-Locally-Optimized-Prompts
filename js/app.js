@@ -70,6 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let renderTimeout = null;
     let pendingContent = '';
 
+    /**
+     * Schedule a render of the output display (throttled)
+     * @param {string} content - The content to render
+     */
     function scheduleRender(content) {
         pendingContent = content;
         if (!renderTimeout) {
@@ -80,6 +84,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    /**
+     * Immediately flush any pending render
+     */
     function flushRender() {
         if (renderTimeout) {
             clearTimeout(renderTimeout);
@@ -91,12 +98,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    /**
+     * Render text to the output display
+     * @param {string} text - The text to display
+     */
     function renderOutput(text) {
         outputDisplay.value = text;
     }
 
     // --- Session Management ---
 
+    /**
+     * Load the current session from the session manager and update UI
+     */
     function loadCurrentSession() {
         const sessionId = sessionManager.getCurrentSessionId();
         if (sessionId) {
@@ -132,6 +146,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    /**
+     * Save the current application state to the session manager
+     */
     function saveState() {
         if (!currentSession) return;
 
@@ -148,6 +165,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- History Navigation ---
 
+    /**
+     * Add a new result to the history and update UI
+     * @param {string} result - The optimized prompt result
+     */
     function addToHistory(result) {
         if (currentHistoryIndex < resultHistory.length - 1) {
             resultHistory = resultHistory.slice(0, currentHistoryIndex + 1);
@@ -158,6 +179,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderOutput(result);
     }
 
+    /**
+     * Update the history navigation UI (counter and buttons)
+     */
     function updateHistoryUI() {
         if (resultHistory.length > 1) {
             historyNav.classList.remove('hidden');
@@ -195,6 +219,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const refineBtnOriginalHTML = '<i class="fa-solid fa-rotate-right"></i> Refine';
     const stopBtnHTML = '<i class="fa-solid fa-stop"></i> Stop';
 
+    /**
+     * Set the loading state of the application and update UI buttons
+     * @param {boolean} loading - Whether the application is in a loading/streaming state
+     * @param {string|null} mode - The current operation mode ('optimize' or 'refine')
+     */
     function setLoading(loading, mode = null) {
         isStreaming = loading;
 
@@ -231,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (isStreaming) {
             client.abort();
+            setLoading(false);
             return;
         }
 
@@ -283,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (isStreaming) {
             client.abort();
+            setLoading(false);
             return;
         }
 
@@ -334,6 +365,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Chat Handler ---
 
+    /**
+     * Append a message to the chat history UI
+     * @param {string} role - The role of the message sender ('user', 'assistant', 'system')
+     * @param {string} text - The message content
+     * @param {boolean} save - Whether to save the state after appending (reserved for future use / API compatibility; currently has no effect)
+     * @returns {HTMLElement} The created message element
+     */
     function appendChatMessage(role, text, save = true) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${role}`;
@@ -342,6 +380,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return msgDiv;
     }
 
+    /**
+     * Handle sending a chat message and processing the streaming response
+     */
     async function handleChat() {
         const message = chatInput.value.trim();
         if (!message) return;
@@ -362,7 +403,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const originalIcon = sendChatBtn.innerHTML;
         sendChatBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
         sendChatBtn.disabled = false;
-        sendChatBtn.onclick = () => client.abort();
+        sendChatBtn.onclick = () => {
+            client.abort();
+            isStreaming = false;
+            sendChatBtn.innerHTML = originalIcon;
+            sendChatBtn.onclick = handleChat;
+        };
         isStreaming = true;
 
         try {
@@ -445,28 +491,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const content = resultHistory[currentHistoryIndex];
-        let filename = 'optimized-prompt.md';
-
-        try {
-            const match = content.match(/---\s*([\s\S]*?)\s*---/);
-            if (match) {
-                const yamlText = match[1];
-                if (yamlText.length <= 50000) {
-                    const data = jsyaml.load(yamlText);
-                    if (data && data.name) {
-                        filename = sanitizeFilename(data.name);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Failed to parse YAML for filename:", e);
-        }
+        const parsed = promptLibrary.parseYamlFrontmatter(content);
+        const filename = sanitizeFilename(parsed.name);
 
         downloadFile(content, filename);
     });
 
     // --- History Modal ---
 
+    /**
+     * Render the list of saved sessions in the history modal
+     */
     function renderSessionsList() {
         const sessions = sessionManager.getAllSessions();
         const list = Object.values(sessions).sort((a, b) => b.updated - a.updated);
@@ -481,6 +516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.forEach(session => {
             const item = document.createElement('div');
             item.className = 'session-item';
+            item.dataset.id = session.id;
             if (session.id === currentSession.id) {
                 item.classList.add('active');
             }
@@ -493,36 +529,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="session-date">${date}</div>
                 </div>
                 <div class="session-actions">
-                    <button class="icon-btn delete-session" data-id="${session.id}" title="Delete">
+                    <button class="icon-btn delete-session" title="Delete">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
             `;
 
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.delete-session')) {
-                    sessionManager.setCurrentSessionId(session.id);
-                    loadCurrentSession();
-                    hideModal(historyModal);
-                }
-            });
-
-            const deleteBtn = item.querySelector('.delete-session');
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('Are you sure you want to delete this session?')) {
-                    sessionManager.deleteSession(session.id);
-                    if (session.id === currentSession.id) {
-                        currentSession = sessionManager.createNewSession();
-                        loadCurrentSession();
-                    }
-                    renderSessionsList();
-                }
-            });
-
             sessionsList.appendChild(item);
         });
     }
+
+    // Event delegation for sessions list
+    sessionsList.addEventListener('click', (e) => {
+        const item = e.target.closest('.session-item');
+        if (!item) return;
+
+        const sessionId = item.dataset.id;
+
+        if (e.target.closest('.delete-session')) {
+            if (confirm('Are you sure you want to delete this session?')) {
+                sessionManager.deleteSession(sessionId);
+                if (sessionId === currentSession.id) {
+                    currentSession = sessionManager.createNewSession();
+                    loadCurrentSession();
+                }
+                renderSessionsList();
+            }
+        } else {
+            sessionManager.setCurrentSessionId(sessionId);
+            loadCurrentSession();
+            hideModal(historyModal);
+        }
+    });
 
     historyBtn.addEventListener('click', () => {
         renderSessionsList();
@@ -533,6 +571,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Library Modal ---
 
+    /**
+     * Render the list of prompts in the library modal
+     * @param {string} filter - Optional search filter for prompt names
+     */
     async function renderLibraryPromptList(filter = '') {
         const allLibraryPrompts = await promptLibrary.getAllPrompts();
         const lowerFilter = filter.toLowerCase();
@@ -570,6 +612,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     librarySaveBtn.addEventListener('click', async () => {
+        if (!promptLibrary.db) {
+            alert('Prompt Library is unavailable. Cannot save prompt.');
+            return;
+        }
         if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
             alert('No prompt to save!');
             return;
@@ -612,6 +658,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     libraryBtn.addEventListener('click', async () => {
+        if (!promptLibrary.db) {
+            alert('Prompt Library is unavailable. This may be due to private browsing mode or lack of IndexedDB support in your browser.');
+            return;
+        }
         selectedPromptId = null;
         libraryNameFilter.value = '';
         await renderLibraryPromptList();
@@ -692,70 +742,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Resize Handle ---
 
-    const resizeHandle = document.getElementById('resize-handle');
-    const inputPanel = document.querySelector('.input-panel');
-    const chatInterface = document.querySelector('.chat-interface');
-
-    const MIN_INPUT_HEIGHT = 280;
-    const MIN_CHAT_HEIGHT = 310;
-
-    const savedChatHeight = localStorage.getItem('chatHeightPercentage');
-    if (savedChatHeight) {
-        chatInterface.style.flex = `0 0 ${savedChatHeight}%`;
-    }
-
-    let isResizing = false;
-    let startY = 0;
-    let startChatHeight = 0;
-
-    resizeHandle.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startY = e.clientY;
-
-        const chatStyle = window.getComputedStyle(chatInterface);
-        const chatHeightPx = parseFloat(chatStyle.height);
-        const panelHeightPx = inputPanel.offsetHeight;
-        startChatHeight = (chatHeightPx / panelHeightPx) * 100;
-
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'ns-resize';
-        e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
-
-        const deltaY = e.clientY - startY;
-        const panelHeight = inputPanel.offsetHeight;
-        const deltaPercent = (deltaY / panelHeight) * 100;
-
-        let newChatHeightPercent = startChatHeight - deltaPercent;
-
-        const newChatHeightPx = (newChatHeightPercent / 100) * panelHeight;
-        const newInputHeightPx = panelHeight - newChatHeightPx;
-
-        if (newInputHeightPx < MIN_INPUT_HEIGHT) {
-            newChatHeightPercent = ((panelHeight - MIN_INPUT_HEIGHT) / panelHeight) * 100;
-        } else if (newChatHeightPx < MIN_CHAT_HEIGHT) {
-            newChatHeightPercent = (MIN_CHAT_HEIGHT / panelHeight) * 100;
+    initVerticalResize(
+        document.getElementById('resize-handle'),
+        document.querySelector('.input-panel'),
+        document.querySelector('.chat-interface'),
+        {
+            minUpperHeight: 280,
+            minLowerHeight: 310,
+            storageKey: 'chatHeightPercentage'
         }
-
-        newChatHeightPercent = Math.max(15, Math.min(85, newChatHeightPercent));
-        chatInterface.style.flex = `0 0 ${newChatHeightPercent}%`;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (isResizing) {
-            isResizing = false;
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-
-            const chatStyle = window.getComputedStyle(chatInterface);
-            const chatHeightPx = parseFloat(chatStyle.height);
-            const panelHeightPx = inputPanel.offsetHeight;
-            const finalChatHeightPercent = ((chatHeightPx / panelHeightPx) * 100).toFixed(2);
-
-            localStorage.setItem('chatHeightPercentage', finalChatHeightPercent);
-        }
-    });
+    );
 });
