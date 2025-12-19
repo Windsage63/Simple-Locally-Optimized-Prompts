@@ -87,7 +87,7 @@ This comprehensive audit examined all source code, configuration, and documentat
 All `fetch()` calls target user-provided endpoints:
 
 | Method | Endpoint | Purpose | Streaming |
-|--------|----------|---------|-----------|
+| ------ | -------- | ------- | --------- |
 | GET | `${baseUrl}/models` | Fetch available models (Optimize/Refine API) | No |
 | GET | `${chatBaseUrl}/models` | Fetch available models (Chat API) | No |
 | POST | `${baseUrl}/chat/completions` | Optimization | Yes |
@@ -262,7 +262,7 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 ## Compliance Summary
 
 | Security Category | Status | Notes |
-|-------------------|--------|-------|
+| ----------------- | ------ | ----- |
 | PII/Credentials | ✅ Pass | No hardcoded secrets or PII |
 | Data Privacy | ✅ Pass | Local storage only (localStorage + IndexedDB), no tracking |
 | XSS Protection | ✅ Pass | Textarea value assignment + escapeHtml() for lists |
@@ -355,6 +355,6 @@ This codebase has been thoroughly reviewed and contains:
 ## Audit History
 
 | Version | Date | Changes |
-|---------|------|---------|
+| ------- | ---- | ------- |
 | 1.0 | November 25, 2025 | Initial audit |
 | 1.1 | November 29, 2025 | Added streaming feature security analysis, AbortController review, innerHTML audit, updated network calls table |

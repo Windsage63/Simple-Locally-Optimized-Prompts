@@ -4,7 +4,7 @@
 
 ## 💻Main Screen ![SLOP UI](docs/img/screenshot.png)
 
-# Simple Locally Optimized Prompts (SLOP) 🧲
+## Simple Locally Optimized Prompts (SLOP) 🧲
 
 ## ✨ Features
 
