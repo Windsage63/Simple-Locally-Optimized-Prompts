@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Append a message to the chat history UI
      * @param {string} role - The role of the message sender ('user', 'assistant', 'system')
      * @param {string} text - The message content
-     * @param {boolean} save - Whether to save the state after appending (unused in current implementation)
+     * @param {boolean} save - Whether to save the state after appending (reserved for future use / API compatibility; currently has no effect)
      * @returns {HTMLElement} The created message element
      */
     function appendChatMessage(role, text, save = true) {

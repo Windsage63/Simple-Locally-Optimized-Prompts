@@ -59,7 +59,7 @@ class PromptLibrary {
             body: content
         };
 
-        const match = content.match(/^\s*---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
+        const match = content.match(/^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
         if (match) {
             try {
                 const yamlText = match[1];
