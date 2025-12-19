@@ -75,6 +75,6 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 
 ## Data Persistence
 
-- **Local Storage**: The application saves the current session state (input, chat, results), API settings, and custom system prompts in the browser's Local Storage.
+- **Local Storage**: The application saves the current session state (input, chat, results), API settings, and custom system prompts in the browser's Local Storage. All keys are namespaced with a `slop_` prefix (e.g., `slop_api_url`, `slop_sessions`) to avoid collisions with other applications.
 - **IndexedDB**: The Prompt Library uses IndexedDB (`slop_prompt_library` database) to persistently store saved prompts with metadata including name, description, and content.
 - **Privacy**: No data is sent to a server other than the configured LLM API.

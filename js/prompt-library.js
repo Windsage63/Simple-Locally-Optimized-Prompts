@@ -59,7 +59,7 @@ class PromptLibrary {
             body: content
         };
 
-        const match = content.match(/^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
+        const match = content.match(/^\s*---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/);
         if (match) {
             try {
                 const yamlText = match[1];
@@ -73,8 +73,10 @@ class PromptLibrary {
 
                 const data = jsyaml.load(yamlText);
 
-                if (data.name) result.name = String(data.name).trim();
-                if (data.description) result.description = String(data.description).trim();
+                if (data && typeof data === 'object') {
+                    if (data.name) result.name = String(data.name).trim();
+                    if (data.description) result.description = String(data.description).trim();
+                }
                 result.body = body.trim();
             } catch (e) {
                 console.warn('No YAML frontmatter found or failed to parse YAML frontmatter:', e);
@@ -85,11 +87,22 @@ class PromptLibrary {
     }
 
     /**
+     * Ensure the database is open before performing operations
+     * @private
+     */
+    _ensureDb() {
+        if (!this.db) {
+            throw new Error('Prompt library database is not initialized. Please check if IndexedDB is supported and enabled.');
+        }
+    }
+
+    /**
      * Generate a unique name by appending (1), (2), etc. if name exists
      * @param {string} baseName - The desired name
      * @returns {Promise<string>} - Unique name
      */
     async generateUniqueName(baseName) {
+        this._ensureDb();
         const allPrompts = await this.getAllPrompts();
         const existingNames = allPrompts.map(p => p.name.toLowerCase());
 
@@ -115,6 +128,7 @@ class PromptLibrary {
      * @returns {Promise<number>} - The new prompt's ID
      */
     async savePrompt(content, autoUniqueName = true) {
+        this._ensureDb();
         const parsed = this.parseYamlFrontmatter(content);
 
         let name = parsed.name;
@@ -156,6 +170,7 @@ class PromptLibrary {
      * @returns {Promise<Object|null>}
      */
     async getPrompt(id) {
+        this._ensureDb();
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
@@ -171,6 +186,7 @@ class PromptLibrary {
      * @returns {Promise<Array>}
      */
     async getAllPrompts() {
+        this._ensureDb();
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
@@ -187,6 +203,7 @@ class PromptLibrary {
      * @returns {Promise<void>}
      */
     async deletePrompt(id) {
+        this._ensureDb();
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);

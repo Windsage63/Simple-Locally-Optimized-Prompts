@@ -15,6 +15,8 @@ The `LLMClient` class (`js/api.js`) manages all interactions with the LLM provid
     1.  **Primary API**: Used for `optimizePrompt`, `refinePrompt`, and `noChatRefinePrompt`.
     2.  **Chat API**: Used for `chatStream` (the "Chat Assistant").
 
+The Chat API configuration is optional and will fall back to the Primary API settings (URL, Model, and Key) if it is not explicitly configured in the Settings modal.
+
 Both configurations default to `http://localhost:1234/v1` (local LLM) but can be configured to point to any OpenAI-compatible endpoint. All completion requests use `fetch` with streaming enabled (`stream: true`) and are handled via Server-Sent Events (SSE).
 
 ## Detailed Endpoints

@@ -1,14 +1,27 @@
 class LLMClient {
+    static CONFIG_KEYS = {
+        PRIMARY: {
+            URL: 'slop_api_url',
+            MODEL: 'slop_model_name',
+            KEY: 'slop_api_key'
+        },
+        CHAT: {
+            URL: 'slop_chat_api_url',
+            MODEL: 'slop_chat_model_name',
+            KEY: 'slop_chat_api_key'
+        }
+    };
+
     constructor() {
         // Namespaced keys with fallback to defaults
-        this.baseUrl = localStorage.getItem('slop_api_url') || localStorage.getItem('api_url') || 'http://localhost:1234/v1';
-        this.model = localStorage.getItem('slop_model_name') || localStorage.getItem('model_name') || 'local-model';
-        this.apiKey = localStorage.getItem('slop_api_key') || '';
+        this.baseUrl = localStorage.getItem(LLMClient.CONFIG_KEYS.PRIMARY.URL) || localStorage.getItem('api_url') || 'http://localhost:1234/v1';
+        this.model = localStorage.getItem(LLMClient.CONFIG_KEYS.PRIMARY.MODEL) || localStorage.getItem('model_name') || 'local-model';
+        this.apiKey = localStorage.getItem(LLMClient.CONFIG_KEYS.PRIMARY.KEY) || '';
 
         // Chat-specific config (falls back to primary config if not set)
-        this.chatBaseUrl = localStorage.getItem('slop_chat_api_url') || this.baseUrl;
-        this.chatModel = localStorage.getItem('slop_chat_model_name') || this.model;
-        this.chatApiKey = localStorage.getItem('slop_chat_api_key') || this.apiKey;
+        this.chatBaseUrl = localStorage.getItem(LLMClient.CONFIG_KEYS.CHAT.URL) || this.baseUrl;
+        this.chatModel = localStorage.getItem(LLMClient.CONFIG_KEYS.CHAT.MODEL) || this.model;
+        this.chatApiKey = localStorage.getItem(LLMClient.CONFIG_KEYS.CHAT.KEY) || this.apiKey;
         this.history = null;
         this.abortController = null;
     }
@@ -33,9 +46,7 @@ class LLMClient {
     }
 
     _updateConfig(prefix, url, model, apiKey, saveKey) {
-        const urlKey = prefix ? `slop_${prefix}_api_url` : 'slop_api_url';
-        const modelKey = prefix ? `slop_${prefix}_model_name` : 'slop_model_name';
-        const apiKeyKey = prefix ? `slop_${prefix}_api_key` : 'slop_api_key';
+        const keys = prefix === 'chat' ? LLMClient.CONFIG_KEYS.CHAT : LLMClient.CONFIG_KEYS.PRIMARY;
 
         // Remove trailing slashes from URL
         const cleanUrl = url ? url.replace(/\/+$/, '') : url;
@@ -50,13 +61,13 @@ class LLMClient {
             this.apiKey = apiKey;
         }
 
-        localStorage.setItem(urlKey, cleanUrl);
-        localStorage.setItem(modelKey, model);
+        localStorage.setItem(keys.URL, cleanUrl);
+        localStorage.setItem(keys.MODEL, model);
 
         if (saveKey) {
-            localStorage.setItem(apiKeyKey, apiKey);
+            localStorage.setItem(keys.KEY, apiKey);
         } else {
-            localStorage.removeItem(apiKeyKey);
+            localStorage.removeItem(keys.KEY);
         }
     }
 

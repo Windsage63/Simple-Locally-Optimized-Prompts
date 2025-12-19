@@ -11,7 +11,7 @@
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
 - **Secure & Offline-Ready**: All libraries (JS-YAML) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
 - **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, refinement (with chat), and refinement (without chat). This allows the system to be used for many similar workflows where discussion and incremental revision are beneficial.
-- **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use one powerful model for prompt generation and refinement, while a different model critiques and analyzes the output.
+- **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use one powerful model for prompt generation and refinement, while a different model critiques and analyzes the output. The Chat Assistant falls back to the primary API settings if left unconfigured.
 - **Real-Time Streaming**: See results as they generate with live streaming output. Cancel any operation mid-stream with the Stop button.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
@@ -56,7 +56,7 @@ You need an LLM API connection or a local LLM server running that is compatible 
     - **Optimize / Refine API** (Required):
       - Enter your local server URL (e.g., `http://localhost:1234/v1`) or an external API endpoint.
       - Enter an API Key if required. Check "Save Key" to persist it, or leave unchecked to keep it in session memory only.
-      - Enter a model name (or click the refresh icon to fetch available models).
+      - Enter a model name (or click the **Fetch Models** icon 🔄 to fetch available models).
     - **Chat Assistant API** (Optional):
       - Configure a separate endpoint, API key, and model for the chat assistant.
       - This allows you to use one model for prompt generation and a different model for critiquing/analyzing the results.

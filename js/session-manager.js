@@ -58,8 +58,13 @@ class SessionManager {
         session.updated = Date.now();
         
         // Generate a name if it's the default one and we have input
-        if (session.promptInput && (session.name === 'New Session' || session.name === session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : ''))) {
-            session.name = session.promptInput.slice(0, 30) + (session.promptInput.length > 30 ? '...' : '');
+        if (session.promptInput) {
+            const trimmedInput = session.promptInput.trim();
+            const generatedName = trimmedInput.slice(0, 30) + (trimmedInput.length > 30 ? '...' : '');
+            
+            if (session.name === 'New Session' || !session.name) {
+                session.name = generatedName || 'New Session';
+            }
         }
 
         sessions[session.id] = session;

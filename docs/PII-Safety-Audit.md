@@ -1,9 +1,9 @@
 # PII & Security Audit - Complete ✓
 
-**Last Updated:** November 29, 2025  
+**Last Updated:** December 18, 2025  
 **Auditor:** AI Security Review  
 **Repository:** Simple Locally Optimized Prompts (SLOP)  
-**Version:** 1.1 (Streaming Feature Update)  
+**Version:** 1.2 (Documentation Sync Update)  
 
 ---
 
@@ -55,7 +55,7 @@ This comprehensive audit examined all source code, configuration, and documentat
 **Local Storage Only:**
 
 - All data stored exclusively in browser `localStorage`, `sessionStorage`, and `IndexedDB`
-- **LocalStorage Keys (Namespaced):**
+- **LocalStorage Keys:**
   - `slop_api_url` - User's API endpoint (Optimize/Refine)
   - `slop_model_name` - Model selection (Optimize/Refine)
   - `slop_api_key` - Optional API key (Optimize/Refine, user controlled)
@@ -69,7 +69,7 @@ This comprehensive audit examined all source code, configuration, and documentat
   - `slop_prompt_refine` - Custom refine system prompt
   - `slop_prompt_refine_no_chat` - Custom refine (no chat) system prompt
   - `slop_word_wrap` - UI preference
-  - `chatHeightPercentage` - UI preference
+  - `chatHeightPercentage` - UI preference (not namespaced)
 - **IndexedDB Database:**
   - `slop_prompt_library` - Persistent storage for saved prompts (Prompt Library feature)
     - Object store: `prompts` with indexes on `name`, `created`, `updated`

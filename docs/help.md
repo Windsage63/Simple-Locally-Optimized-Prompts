@@ -8,7 +8,7 @@ Welcome to **Simple Locally Optimized Prompts (SLOP) 🧲**! This tool helps you
     * Click the **Settings** icon ⚙️ in the top right.
     * **Optimize / Refine API** (Required):
         * Enter your **API Endpoint** (e.g., `http://localhost:1234/v1` for LM Studio).
-        * Enter your **Model Name** or click the refresh icon to fetch available models.
+        * Enter your **Model Name** or click the **Fetch Models** icon 🔄 to fetch available models.
         * Optionally enter an **API Key** and check "Save Key" to persist it.
     * **Chat Assistant API** (Optional):
         * Configure a separate endpoint and model for the chat assistant.

@@ -84,6 +84,12 @@ function initSettings(client) {
 
     /**
      * Setup model fetcher button behavior
+     * @param {HTMLElement} btn - The button that triggers the fetch
+     * @param {HTMLInputElement} urlInput - The input containing the API URL
+     * @param {HTMLInputElement} keyInput - The input containing the API Key
+     * @param {HTMLSelectElement} select - The select element to populate with models
+     * @param {HTMLInputElement} nameInput - The input to update with the selected model name
+     * @param {boolean} isChat - Whether this is for the chat API
      */
     function setupModelFetcher(btn, urlInput, keyInput, select, nameInput, isChat = false) {
         btn.addEventListener('click', async () => {
@@ -152,6 +158,10 @@ function initSettings(client) {
 
     // --- Word Wrap ---
 
+    /**
+     * Apply word wrap setting to the editor textareas
+     * @param {boolean} enabled - Whether word wrap should be enabled
+     */
     function applyWordWrap(enabled) {
         if (enabled) {
             outputDisplay.classList.remove('no-wrap');
@@ -226,6 +236,10 @@ function initSettings(client) {
 
     // --- Prompt Settings ---
 
+    /**
+     * Open the prompt settings modal and show the specified section
+     * @param {string} sectionId - The ID of the section to show
+     */
     function openPromptSettings(sectionId) {
         // Load current prompts
         optimizePromptInput.value = localStorage.getItem(STORAGE_KEYS.PROMPT_OPTIMIZE) || LLMClient.DEFAULT_PROMPTS.optimize;
@@ -258,7 +272,14 @@ function initSettings(client) {
 
     // --- Prompt Save/Reset Actions ---
 
-    // Helper to create save/reset handlers
+    /**
+     * Helper to create save/reset handlers for prompt editors
+     * @param {HTMLElement} saveBtn - The save button
+     * @param {HTMLElement} resetBtn - The reset button
+     * @param {HTMLTextAreaElement} textarea - The textarea containing the prompt
+     * @param {string} storageKey - The localStorage key to save to
+     * @param {string} defaultKey - The key in LLMClient.DEFAULT_PROMPTS to reset to
+     */
     function setupPromptActions(saveBtn, resetBtn, textarea, storageKey, defaultKey) {
         saveBtn.addEventListener('click', () => {
             const val = textarea.value.trim();
