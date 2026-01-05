@@ -13,13 +13,15 @@
 - **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, refinement (with chat), and refinement (without chat). This allows the system to be used for many similar workflows where discussion and incremental revision are beneficial.
 - **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use one powerful model for prompt generation and refinement, while a different model critiques and analyzes the output. The Chat Assistant falls back to the primary API settings if left unconfigured.
 - **Real-Time Streaming**: See results as they generate with live streaming output. Cancel any operation mid-stream with the Stop button.
-- **Smart Optimization**: Turns freeform ideas into structured, professional prompts (YAML + Markdown).
+- **Smart Optimization**: Turns freeform ideas into structured, professional prompts with YAML frontmatter metadata.
+- **YAML Frontmatter**: Generated prompts include structured metadata (name, description, argument-hint) useful for organizing prompts in systems like VS Code or Obsidian.
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
 - **Flexible Refinement**: Use the "Include Chat" toggle to refine prompts with or without chat context. Refine based on updated input text alone, or incorporate the full chat discussion.
+- **Smart Chat Reset**: Chat history resets after each refinement to provide fresh context for the new prompt version.
 - **Session Management**: Save and restore multiple prompt engineering sessions to keep your work organized.
 - **Prompt Library**: Save your favorite optimized prompts to a persistent local library (IndexedDB). Filter by name, import/export prompts as Markdown files, and quickly load saved prompts into your workspace.
 - **Resizable UI**: Adjust the split between the input area and chat window using the draggable resize handle, allowing you to customize your workspace layout.
-- **Result History**: Navigate through previous versions of your optimized prompt to compare results.
+- **Result History**: Navigate through previous versions of your optimized prompt to compare results using the Previous/Next buttons.
 - **Intelligent Saving**: Downloads your prompt as a Markdown file with a meaningful filename derived automatically from the prompt's name.
 - **Premium UI**: Features a modern glassmorphic design with dark mode and smooth animations.
 
@@ -75,8 +77,10 @@ You need an LLM API connection or a local LLM server running that is compatible 
       - **Unchecked**: Refinement uses only the updated input text vs. current result (useful for quick iterations without chat).
     - Click **Refine** to update the result.
 5. **Browse History**:
-    - Use the `<` and `>` arrows in the output header to view previous versions.
-    - If you want to revert to a previous version, simply arrow to the place you want to resume, and continue to refine from there.
+    - Use the `<` and `>` buttons (with chevron icons) in the output header to navigate through previous versions of your optimized prompt.
+    - The counter shows your current position (e.g., "2 / 3").
+    - If you want to revert to a previous version, simply navigate to the position you want, and continue to refine from there.
+    - Note: Refining a prompt will truncate any history entries that come "after" your current position.
 6. **Manage Sessions**:
     - Click the **History (Clock)** icon in the header to view saved sessions.
     - Switch between sessions or delete old ones to keep your workspace organized.

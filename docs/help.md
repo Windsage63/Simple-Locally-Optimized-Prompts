@@ -22,7 +22,11 @@ Welcome to **Simple Locally Optimized Prompts (SLOP) 🧲**! This tool helps you
     * Click **Optimize** ✨.
     * The AI will generate a structured, professional prompt in the **Optimized Result** panel. Results stream in real-time as they are generated.
     * Need to stop? Click the **Stop** button (the Optimize button transforms during generation) to cancel the operation.
-    * Note that all prompts are created with a frontmatter section that contains metadata about the prompt. This is useful for storing or categorizing and storing prompts systems like VS Code or Obsidian
+    * Note that all prompts are created with a YAML frontmatter section that contains metadata:
+      - `name`: Short identifier for the prompt (camelCase)
+      - `description`: Brief purpose of the prompt
+      - `argument-hint`: Expected inputs for the prompt
+      This frontmatter is useful for storing or categorizing prompts in systems like VS Code or Obsidian.
     * Copy the prompt with the copy button or save it with the save button and paste it into your LLM or any OpenAI-compatible API.
 
 ## 📝 Refining Your Prompt
@@ -37,9 +41,11 @@ Often, the first result is good but not perfect. Use the chat to improve it:
     * The **Include Chat** checkbox controls how refinement works:
         * **Checked** (default): Refinement uses the full chat discussion to inform changes.
         * **Unchecked**: Refinement only compares your updated input text against the current result (useful for quick iterations).
+    * **Chat Reset**: After each refinement, the chat history resets to provide fresh context for the new optimized prompt version. This prevents confusion when reviewing changes.
     * Click the **Refine** button 🔄 to generate a new version incorporating your feedback.
 3. **Review History**:
     * Use the arrow buttons < and > in the Output Panel to switch between different versions of your prompt.
+    * **History Removal**: Refining will discard all chat history.
 
 ## 📦 Managing Prompts
 
@@ -60,7 +66,7 @@ Save your best prompts to a persistent local library for easy access:
 
 ### Quick Actions
 
-* **Save to File**: Click the **Download** icon to save the current prompt as a Markdown file.
+* **Save to File**: Click the **Download** icon (📥) to save the current prompt as a Markdown file.
 * **Copy to Clipboard**: Click the **Copy** icon to copy the prompt text.
 * **History**: Click the **Clock** icon to see your past sessions.
 

@@ -8,6 +8,19 @@
 | `POST` | `/chat/completions` | `chatStream` | Sends a chat message for refinement discussions, maintaining conversation history. |
 | `POST` | `/chat/completions` | `refinePrompt` | Refines the optimized prompt based on chat history and user feedback. |
 | `POST` | `/chat/completions` | `noChatRefinePrompt` | Refines the optimized prompt based on the original idea, without chat context. |
+| `POST` | `/chat/completions` | `chat_fallback` | Fallback chat prompt used when original/optimized context is unavailable. |
+
+## System Prompts
+
+The application uses five system prompts to guide LLM behavior:
+
+| Prompt | Variable | Purpose |
+| :--- | :--- | :--- |
+| `optimize` | `{{originalPrompt}}` | Generates initial optimized prompt from raw input |
+| `chat` | `{{originalPrompt}}`, `{{optimizedResult}}` | Planning agent for discussing prompt refinements |
+| `refine` | `{{originalPrompt}}`, `{{currentResult}}`, `{{chatHistory}}` | Applies refinements with full chat context |
+| `refine_no_chat` | `{{originalPrompt}}`, `{{currentResult}}` | Applies refinements comparing input vs current result only |
+| `chat_fallback` | (none) | Fallback response when original/optimized context is missing |
 
 ## Overview
 
@@ -51,6 +64,15 @@ The core endpoint for all text generation tasks.
         ```
     - **Functions**:
       - **`optimizePrompt`**: Uses the `optimize` system prompt template. Payload is the raw user idea.
-      - **`chatStream`**: Uses the `chat` system prompt template. Payload includes the conversation history.
+      - **`chatStream`**: Uses the `chat` system prompt template. Payload includes the conversation history. If `originalPrompt` or `optimizedResult` is missing, falls back to `chat_fallback`.
       - **`refinePrompt`**: Uses the `refine` system prompt template. Payload includes the original prompt, current result, and chat history.
       - **`noChatRefinePrompt`**: Uses the `refine_no_chat` system prompt template. Payload includes the original prompt and current result.
+
+### Fallback Behavior
+
+The `chat_fallback` prompt is used when `chatStream` is called without valid `originalPrompt` or `optimizedResult` context. This can happen when:
+
+- Chatting before any optimization has been performed
+- Session state has been lost or corrupted
+
+The fallback provides a polite response indicating inability to assist without context.
