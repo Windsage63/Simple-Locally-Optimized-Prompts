@@ -11,7 +11,7 @@ After comprehensive review of all project documentation and source code, I've id
 ## Mismatch Report (Completed)
 
 | File | Location | Discrepancy | Status |
-|------|-----------|---------------|---------|
+| ---- | --------- | ------------- | ------- |
 | `functional_description.md` | Line 45 | "New Chat / Prompt Button" description updated | ✅ Completed |
 | `functional_description.md` | Line 52 | Include Chat checkbox now explains chat reset behavior | ✅ Completed |
 | `functional_description.md` | Lines 59-62 | History truncation documented | ✅ Completed |
@@ -35,7 +35,7 @@ After comprehensive review of all project documentation and source code, I've id
 ## Clarifying Items (Resolved)
 
 | Item | Description | Resolution |
-|-------|--------------|-------------|
+| ----- | ----------- | ----------- |
 | Chat Reset After Refinement | Why chat resets | **Documented**: Fresh context for new prompt version prevents confusion |
 | Session Name Generation | Names truncate at 30 chars | **Logged**: Future enhancement |
 | Fallback Mechanism | chat_fallback undocumented | **Documented**: Added to API reference |
@@ -178,4 +178,4 @@ The documentation has been updated to address all actionable items:
 
 ---
 
-*Documentation sync completed on January 5, 2026*
+Documentation sync completed on January 5, 2026

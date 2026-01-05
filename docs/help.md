@@ -23,9 +23,9 @@ Welcome to **Simple Locally Optimized Prompts (SLOP) 🧲**! This tool helps you
     * The AI will generate a structured, professional prompt in the **Optimized Result** panel. Results stream in real-time as they are generated.
     * Need to stop? Click the **Stop** button (the Optimize button transforms during generation) to cancel the operation.
     * Note that all prompts are created with a YAML frontmatter section that contains metadata:
-      - `name`: Short identifier for the prompt (camelCase)
-      - `description`: Brief purpose of the prompt
-      - `argument-hint`: Expected inputs for the prompt
+      * `name`: Short identifier for the prompt (camelCase)
+      * `description`: Brief purpose of the prompt
+      * `argument-hint`: Expected inputs for the prompt
       This frontmatter is useful for storing or categorizing prompts in systems like VS Code or Obsidian.
     * Copy the prompt with the copy button or save it with the save button and paste it into your LLM or any OpenAI-compatible API.
 
