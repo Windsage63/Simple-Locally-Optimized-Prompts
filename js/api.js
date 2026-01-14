@@ -27,7 +27,17 @@ class LLMClient {
     }
 
     /**
-     * Abort any in-progress streaming request
+     * Remove trailing slashes from a URL.
+     * @param {string} url - The URL to clean
+     * @returns {string} The cleaned URL
+     * @private
+     */
+    _cleanUrl(url) {
+        return url ? url.replace(/\/+$/, '') : url;
+    }
+
+    /**
+     * Abort any in-progress streaming request.
      */
     abort() {
         if (this.abortController) {
@@ -37,7 +47,9 @@ class LLMClient {
     }
 
     /**
-     * Create a new AbortController for a streaming request
+     * Create a new AbortController for a streaming request.
+     * Cancels any existing request first.
+     * @returns {AbortSignal} The signal for the new controller
      */
     createAbortController() {
         this.abort(); // Cancel any existing request
@@ -45,11 +57,19 @@ class LLMClient {
         return this.abortController.signal;
     }
 
+    /**
+     * Internal method to update configuration.
+     * @param {string} prefix - 'chat' or empty string for primary
+     * @param {string} url - The API endpoint URL
+     * @param {string} model - The model name
+     * @param {string} apiKey - The API key
+     * @param {boolean} saveKey - Whether to save the API key to local storage
+     * @private
+     */
     _updateConfig(prefix, url, model, apiKey, saveKey) {
         const keys = prefix === 'chat' ? LLMClient.CONFIG_KEYS.CHAT : LLMClient.CONFIG_KEYS.PRIMARY;
 
-        // Remove trailing slashes from URL
-        const cleanUrl = url ? url.replace(/\/+$/, '') : url;
+        const cleanUrl = this._cleanUrl(url);
 
         if (prefix === 'chat') {
             this.chatBaseUrl = cleanUrl;
@@ -71,18 +91,42 @@ class LLMClient {
         }
     }
 
+    /**
+     * Update the primary LLM configuration.
+     * @param {string} url - The API endpoint URL
+     * @param {string} model - The model name
+     * @param {string} apiKey - The API key
+     * @param {boolean} saveKey - Whether to save the API key to local storage
+     */
     updateConfig(url, model, apiKey, saveKey) {
         this._updateConfig('', url, model, apiKey, saveKey);
     }
 
+    /**
+     * Update the chat-specific LLM configuration.
+     * @param {string} url - The API endpoint URL
+     * @param {string} model - The model name
+     * @param {string} apiKey - The API key
+     * @param {boolean} saveKey - Whether to save the API key to local storage
+     */
     updateChatConfig(url, model, apiKey, saveKey) {
         this._updateConfig('chat', url, model, apiKey, saveKey);
     }
 
+    /**
+     * Get available models from the primary configured endpoint.
+     * @returns {Promise<Array>} List of available models
+     */
     async getModels() {
         return this.getModelsForEndpoint(this.baseUrl, this.apiKey);
     }
 
+    /**
+     * Get available models from a specific endpoint.
+     * @param {string} baseUrl - The API endpoint URL
+     * @param {string} apiKey - The API key
+     * @returns {Promise<Array>} List of available models
+     */
     async getModelsForEndpoint(baseUrl, apiKey) {
         try {
             const headers = {};
@@ -90,8 +134,7 @@ class LLMClient {
                 headers['Authorization'] = `Bearer ${apiKey}`;
             }
 
-            // Ensure no trailing slash
-            const cleanUrl = baseUrl ? baseUrl.replace(/\/+$/, '') : baseUrl;
+            const cleanUrl = this._cleanUrl(baseUrl);
 
             const response = await fetch(`${cleanUrl}/models`, { headers });
             if (!response.ok) throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
@@ -346,6 +389,13 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
 
     };
 
+    /**
+     * Replace placeholders in a template with values.
+     * @param {string} template - The template string
+     * @param {Object} replacements - Key-value pairs for replacement
+     * @param {string} fallback - Fallback value if replacement is missing
+     * @returns {string} The processed string
+     */
     static batchTemplateReplace(template, replacements, fallback = '') {
         if (template === null || template === undefined) return '';
 
@@ -367,7 +417,14 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     // ==================== LLM API METHODS ====================
 
     /**
-     * Generic streaming request handler
+     * Generic streaming request handler.
+     * @param {string} endpoint - The API endpoint URL
+     * @param {Array} messages - List of message objects
+     * @param {string} model - The model name
+     * @param {string} apiKey - The API key
+     * @param {AbortSignal} signal - Abort signal
+     * @yields {string} Content chunks as they arrive
+     * @private
      */
     async *_streamRequest(endpoint, messages, model, apiKey, signal) {
         const headers = {
@@ -375,8 +432,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
         };
         if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-        // Ensure no trailing slash
-        const cleanEndpoint = endpoint ? endpoint.replace(/\/+$/, '') : endpoint;
+        const cleanEndpoint = this._cleanUrl(endpoint);
 
         const response = await fetch(`${cleanEndpoint}/chat/completions`, {
             method: 'POST',
@@ -399,7 +455,10 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     }
 
     /**
-     * Parse SSE stream and yield content chunks
+     * Parse SSE stream and yield content chunks.
+     * @param {Response} response - The fetch response object
+     * @yields {string} Content chunks
+     * @private
      */
     async *parseSSEStream(response) {
         const reader = response.body.getReader();
@@ -438,7 +497,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     }
 
     /**
-     * Optimize a user prompt using the LLM (streaming)
+     * Optimize a user prompt using the LLM (streaming).
      * @param {string} userPrompt - The raw user prompt to optimize
      * @yields {string} Content chunks as they arrive
      */
@@ -452,7 +511,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     }
 
     /**
-     * Chat with the LLM about prompt refinement (streaming)
+     * Chat with the LLM about prompt refinement (streaming).
      * @param {string} userMessage - The user's chat message
      * @param {string|null} originalPrompt - The original user prompt for context
      * @param {string|null} optimizedResult - The current optimized result for context
@@ -520,7 +579,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     }
 
     /**
-     * Refine a prompt based on chat history (streaming)
+     * Refine a prompt based on chat history (streaming).
      * @param {string} originalPrompt - The original user prompt
      * @param {string} currentResult - The current optimized prompt
      * @param {Array} chatHistory - Array of chat messages for context
@@ -540,7 +599,7 @@ Your task is to incrementally REFINE the "Current Optimized Prompt" based on the
     }
 
     /**
-     * Refine a prompt without chat history (streaming)
+     * Refine a prompt without chat history (streaming).
      * @param {string} originalPrompt - The original user prompt
      * @param {string} currentResult - The current optimized prompt
      * @yields {string} Content chunks as they arrive
