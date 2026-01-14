@@ -4,34 +4,56 @@ class SessionManager {
         this.CURRENT_SESSION_KEY = 'slop_current_session_id';
     }
 
-    // Generate a unique ID
+    /**
+     * Generate a unique session ID.
+     * Uses crypto.getRandomValues for better entropy than Math.random().
+     * @private
+     * @returns {string} A unique identifier
+     */
     _generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        return Date.now().toString(36) + '-' + 
+               crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
     }
 
-    // Get all sessions metadata
+    /**
+     * Retrieve all sessions from local storage.
+     * @returns {Object.<string, Object>} An object map of session IDs to session objects
+     */
     getAllSessions() {
         const sessions = localStorage.getItem(this.STORAGE_KEY);
         return sessions ? JSON.parse(sessions) : {};
     }
 
-    // Get a specific session
+    /**
+     * Retrieve a specific session by ID.
+     * @param {string} id - The session ID to retrieve
+     * @returns {Object|null} The session object or null if not found
+     */
     getSession(id) {
         const sessions = this.getAllSessions();
         return sessions[id] || null;
     }
 
-    // Get the ID of the last active session
+    /**
+     * Get the ID of the currently active session.
+     * @returns {string|null} The current session ID or null if none set
+     */
     getCurrentSessionId() {
         return localStorage.getItem(this.CURRENT_SESSION_KEY);
     }
 
-    // Set the current session ID
+    /**
+     * Set the currently active session ID.
+     * @param {string} id - The session ID to set as current
+     */
     setCurrentSessionId(id) {
         localStorage.setItem(this.CURRENT_SESSION_KEY, id);
     }
 
-    // Create a new session
+    /**
+     * Create and store a new session.
+     * @returns {Object} The newly created session object
+     */
     createNewSession() {
         const id = this._generateId();
         const session = {
@@ -50,7 +72,11 @@ class SessionManager {
         return session;
     }
 
-    // Save or update a session
+    /**
+     * Save or update a session in local storage.
+     * Automatically updates the 'updated' timestamp and generates a name if needed.
+     * @param {Object} session - The session object to save
+     */
     saveSession(session) {
         const sessions = this.getAllSessions();
         
@@ -71,7 +97,11 @@ class SessionManager {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sessions));
     }
 
-    // Delete a session
+    /**
+     * Delete a session by ID.
+     * Also clears current session key if the deleted session was active.
+     * @param {string} id - The ID of the session to delete
+     */
     deleteSession(id) {
         const sessions = this.getAllSessions();
         delete sessions[id];

@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!client.history || client.history.length === 0) {
             chatHistoryDiv.innerHTML = '<div class="chat-message system"><p>Optimize your prompt first, then chat here to refine it!</p></div>';
         } else {
-            client.history.forEach(msg => appendChatMessage(msg.role, msg.content, false));
+            client.history.forEach(msg => appendChatMessage(msg.role, msg.content));
             chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
         }
 
@@ -366,13 +366,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Chat Handler ---
 
     /**
-     * Append a message to the chat history UI
+     * Append a message to the chat history UI.
      * @param {string} role - The role of the message sender ('user', 'assistant', 'system')
      * @param {string} text - The message content
-     * @param {boolean} save - Whether to save the state after appending (reserved for future use / API compatibility; currently has no effect)
      * @returns {HTMLElement} The created message element
      */
-    function appendChatMessage(role, text, save = true) {
+    function appendChatMessage(role, text) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${role}`;
         msgDiv.innerText = text;
@@ -381,14 +380,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     /**
-     * Handle sending a chat message and processing the streaming response
+     * Handle sending a chat message and processing the streaming response.
+     * Manages UI state during streaming (disable buttons, show stop button).
      */
     async function handleChat() {
+        // If currently streaming, this button acts as a stop button
+        if (isStreaming) {
+            client.abort();
+            isStreaming = false;
+            // The catch block in the ongoing stream loop will handle the UI reset
+            return;
+        }
+
         const message = chatInput.value.trim();
         if (!message) return;
-
-        // Safety guard - prevent double-sends during streaming
-        if (isStreaming) return;
 
         appendChatMessage('user', message);
         chatInput.value = '';
@@ -399,16 +404,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const assistantMsgDiv = appendChatMessage('assistant', '');
         let fullResponse = '';
 
-        sendChatBtn.disabled = true;
-        const originalIcon = sendChatBtn.innerHTML;
+        // Update UI for streaming state
+        const originalIcon = '<i class="fa-solid fa-paper-plane"></i>'; // simplified assumption, or save original
         sendChatBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
-        sendChatBtn.disabled = false;
-        sendChatBtn.onclick = () => {
-            client.abort();
-            isStreaming = false;
-            sendChatBtn.innerHTML = originalIcon;
-            sendChatBtn.onclick = handleChat;
-        };
         isStreaming = true;
 
         try {
@@ -435,11 +433,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         } finally {
             isStreaming = false;
             sendChatBtn.innerHTML = originalIcon;
-            sendChatBtn.onclick = handleChat;
         }
     }
 
-    sendChatBtn.onclick = handleChat;
+    sendChatBtn.addEventListener('click', handleChat);
 
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -637,14 +634,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await promptLibrary.savePrompt(content, false);
                     alert('Prompt overwritten in library!');
                 } catch (error) {
-                    alert('Failed to save prompt: ' + error.message);
+                    alert('Failed to save prompt: ' + error.message + '\n\nCheck if your browser storage is full or if you are in private browsing mode.');
                 }
             } else {
                 try {
                     await promptLibrary.savePrompt(content, true);
                     alert('Prompt saved to library with new name!');
                 } catch (error) {
-                    alert('Failed to save prompt: ' + error.message);
+                    alert('Failed to save prompt: ' + error.message + '\n\nCheck if your browser storage is full or if you are in private browsing mode.');
                 }
             }
         } else {
@@ -652,7 +649,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await promptLibrary.savePrompt(content, false);
                 alert('Prompt saved to library!');
             } catch (error) {
-                alert('Failed to save prompt: ' + error.message);
+                alert('Failed to save prompt: ' + error.message + '\n\nCheck if your browser storage is full or if you are in private browsing mode.');
             }
         }
     });
