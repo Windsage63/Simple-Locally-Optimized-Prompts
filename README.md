@@ -38,7 +38,7 @@ You need an LLM API connection or a local LLM server running that is compatible 
   - Start the server: `./server -m path/to/model.gguf --port 8080`
   - Default URL: `http://localhost:8080/v1`
   - API Key: `null` No API Key required on same machine. See **CORS Note** below.
-  - **Model Name**: The model name entered in settings is **ignored** by the standard llama.cpp server; it will always use the model loaded at startup.
+  - **Model Name**: Newer versions of Llama.cpp server will load a list of models similar to LM Studio, or will use the model loaded manually when you started llama.cpp server.
 
 - **[Ollama](https://ollama.com/)**:
   - Run `ollama serve`.

@@ -12,7 +12,7 @@
 
 ## System Prompts
 
-The application uses five system prompts to guide LLM behavior:
+The application uses four user-customizable system prompts plus one internal fallback:
 
 | Prompt | Variable | Purpose |
 | :--- | :--- | :--- |
