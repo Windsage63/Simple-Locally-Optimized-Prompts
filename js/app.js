@@ -66,6 +66,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isStreaming = false;
     let selectedPromptId = null;
 
+    // Mode toggle
+    const modeToggleBtn = document.getElementById('mode-toggle-btn');
+    const STORAGE_KEY_MODE = 'slop_optimization_mode';
+
+    /**
+     * Get current optimization mode
+     * @returns {boolean} True if in skills mode, false for prompts mode
+     */
+    function getSkillMode() {
+        return localStorage.getItem(STORAGE_KEY_MODE) === 'skills';
+    }
+
+    /**
+     * Update mode toggle button UI based on current mode
+     */
+    function updateModeUI() {
+        const isSkillMode = getSkillMode();
+        modeToggleBtn.textContent = isSkillMode ? 'Skills' : 'Prompts';
+        modeToggleBtn.classList.toggle('skills-mode', isSkillMode);
+    }
+
+    // Initialize mode UI
+    updateModeUI();
+
+    // Mode toggle handler
+    modeToggleBtn.addEventListener('click', () => {
+        const isSkillMode = getSkillMode();
+        localStorage.setItem(STORAGE_KEY_MODE, isSkillMode ? 'prompts' : 'skills');
+        updateModeUI();
+    });
+
     // Throttled rendering for streaming output
     let renderTimeout = null;
     let pendingContent = '';
@@ -273,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let streamStarted = false;
 
         try {
-            for await (const chunk of client.optimizePrompt(text)) {
+            for await (const chunk of client.optimizePrompt(text, getSkillMode())) {
                 if (!streamStarted) {
                     streamStarted = true;
                     loadingOverlay.classList.add('hidden');
@@ -328,9 +359,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         let streamStarted = false;
 
         try {
+            const skillMode = getSkillMode();
             const stream = includeChat
-                ? client.refinePrompt(originalText, currentOutput, client.history)
-                : client.noChatRefinePrompt(originalText, currentOutput);
+                ? client.refinePrompt(originalText, currentOutput, client.history, skillMode)
+                : client.noChatRefinePrompt(originalText, currentOutput, skillMode);
 
             for await (const chunk of stream) {
                 if (!streamStarted) {
@@ -481,17 +513,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Save Prompt Button (Download) ---
 
-    savePromptBtn.addEventListener('click', () => {
+    savePromptBtn.addEventListener('click', async () => {
         if (currentHistoryIndex < 0 || !resultHistory[currentHistoryIndex]) {
             alert("No prompt to save!");
             return;
         }
 
         const content = resultHistory[currentHistoryIndex];
-        const parsed = promptLibrary.parseYamlFrontmatter(content);
-        const filename = sanitizeFilename(parsed.name);
-
-        downloadFile(content, filename);
+        
+        // Check if this is a skill (has multi-file markers or skill frontmatter)
+        if (getSkillMode() && typeof SkillPreview !== 'undefined' && SkillPreview.isSkillContent(content)) {
+            // Export as ZIP for skills
+            await SkillPreview.downloadAsZip(content);
+        } else {
+            // Standard markdown download for prompts
+            const parsed = promptLibrary.parseYamlFrontmatter(content);
+            const filename = sanitizeFilename(parsed.name);
+            downloadFile(content, filename);
+        }
     });
 
     // --- History Modal ---

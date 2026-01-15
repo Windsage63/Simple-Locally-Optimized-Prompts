@@ -507,11 +507,19 @@ You are an expert Prompt Engineer. Your task is to incrementally REFINE the curr
     /**
      * Optimize a user prompt using the LLM (streaming).
      * @param {string} userPrompt - The raw user prompt to optimize
+     * @param {boolean} skillMode - Whether to use skill optimization prompts
      * @yields {string} Content chunks as they arrive
      */
-    async *optimizePrompt(userPrompt) {
+    async *optimizePrompt(userPrompt, skillMode = false) {
         const signal = this.createAbortController();
-        const template = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+        let template;
+        
+        if (skillMode && typeof SkillPrompts !== 'undefined') {
+            template = SkillPrompts.getPrompt('optimize');
+        } else {
+            template = localStorage.getItem('slop_prompt_optimize') || LLMClient.DEFAULT_PROMPTS.optimize;
+        }
+        
         const payload = LLMClient.batchTemplateReplace(template, { originalPrompt: userPrompt || '' });
         const messages = [{ role: "user", content: payload }];
 
@@ -591,11 +599,18 @@ You are an expert Prompt Engineer. Your task is to incrementally REFINE the curr
      * @param {string} originalPrompt - The original user prompt
      * @param {string} currentResult - The current optimized prompt
      * @param {Array} chatHistory - Array of chat messages for context
+     * @param {boolean} skillMode - Whether to use skill refinement prompts
      * @yields {string} Content chunks as they arrive
      */
-    async *refinePrompt(originalPrompt, currentResult, chatHistory) {
+    async *refinePrompt(originalPrompt, currentResult, chatHistory, skillMode = false) {
         const signal = this.createAbortController();
-        let systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+        let systemTemplate;
+        
+        if (skillMode && typeof SkillPrompts !== 'undefined') {
+            systemTemplate = SkillPrompts.getPrompt('refine');
+        } else {
+            systemTemplate = localStorage.getItem('slop_prompt_refine') || LLMClient.DEFAULT_PROMPTS.refine;
+        }
 
         const chatHistoryString = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
 
@@ -610,11 +625,18 @@ You are an expert Prompt Engineer. Your task is to incrementally REFINE the curr
      * Refine a prompt without chat history (streaming).
      * @param {string} originalPrompt - The original user prompt
      * @param {string} currentResult - The current optimized prompt
+     * @param {boolean} skillMode - Whether to use skill refinement prompts
      * @yields {string} Content chunks as they arrive
      */
-    async *noChatRefinePrompt(originalPrompt, currentResult) {
+    async *noChatRefinePrompt(originalPrompt, currentResult, skillMode = false) {
         const signal = this.createAbortController();
-        let systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+        let systemTemplate;
+        
+        if (skillMode && typeof SkillPrompts !== 'undefined') {
+            systemTemplate = SkillPrompts.getPrompt('refine_no_chat');
+        } else {
+            systemTemplate = localStorage.getItem('slop_prompt_refine_no_chat') || LLMClient.DEFAULT_PROMPTS.refine_no_chat;
+        }
 
         const systemPrompt = LLMClient.batchTemplateReplace(systemTemplate, { originalPrompt, currentResult });
 

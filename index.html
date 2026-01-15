@@ -22,6 +22,10 @@
                 <img src="docs/img/logos/SLOP_Banner_360x103.png" alt="Simple Locally Optimized Prompts"
                     class="logo-banner">
             </div>
+            <div class="mode-toggle">
+                <span class="mode-label">Mode:</span>
+                <button id="mode-toggle-btn" class="toggle-btn" title="Switch between Prompts and Skills mode">Prompts</button>
+            </div>
             <div class="header-controls">
                 <button id="history-btn" class="icon-btn" title="History">
                     <i class="fa-solid fa-clock-rotate-left"></i>
@@ -117,6 +121,7 @@ I want the best prompt ever written." spellcheck="true"></textarea>
                         </button>
                     </div>
                 </div>
+                <div id="skill-tabs" class="skill-tabs"></div>
                 <div class="editor-container">
                     <textarea id="output-display" placeholder="Optimized prompt will appear here..."></textarea>
                     <div id="loading-overlay" class="hidden">
@@ -352,10 +357,13 @@ I want the best prompt ever written." spellcheck="true"></textarea>
     </div>
 
     <script src="js/lib/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/utils/file-utils.js"></script>
     <script src="js/utils/modal-manager.js"></script>
     <script src="js/utils/resizable.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/skill-prompts.js"></script>
+    <script src="js/skill-preview.js"></script>
     <script src="js/session-manager.js"></script>
     <script src="js/prompt-library.js"></script>
     <script src="js/settings.js"></script>
