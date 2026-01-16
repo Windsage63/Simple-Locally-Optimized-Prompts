@@ -1,10 +1,11 @@
 # Multi-Agent Skill Sync Script (Windows/PowerShell)
-# This script ensures that skills created in .agents/skills are visible to 
+# This script ensures that skills created in .agent/skills are visible to 
 # GitHub (.github/skills) without duplicating files.
 
-$SourceDir = Join-Path $PSScriptRoot ".agents\skills"
+$ProjectRoot = Split-Path $PSScriptRoot -Parent
+$SourceDir = Join-Path $ProjectRoot ".agent\skills"
 $Targets = @(
-    Join-Path $PSScriptRoot ".github\skills"
+    Join-Path $ProjectRoot ".github\skills"
 )
 
 # Get all skill folders from the primary source
