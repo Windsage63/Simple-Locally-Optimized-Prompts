@@ -1,31 +1,32 @@
-# PII & Security Audit - Complete ✓
+# PII & Security Audit
 
-**Last Updated:** December 18, 2025  
+**Last Updated:** February 7, 2026  
 **Auditor:** AI Security Review  
 **Repository:** Simple Locally Optimized Prompts (SLOP)  
-**Version:** 1.2 (Documentation Sync Update)  
+**Version:** 1.4  
 
 ---
 
 ## Executive Summary
 
 > [!IMPORTANT]
-> **✅ SAFE TO PUBLISH**: The repository contains NO personally identifiable information, hardcoded credentials, or confidential data. The application is designed with privacy-first principles and can be safely published publicly.
-
-This comprehensive audit examined all source code, configuration, and documentation files to verify the absence of PII (Personally Identifiable Information), API keys, secrets, and potential security vulnerabilities before public release.
+> **✅ SAFE FOR PUBLICATION**: This audit examined all source code, configuration, and documentation files to verify the absence of PII (Personally Identifiable Information), API keys, secrets, and potential security vulnerabilities. This repository contains NO personally identifiable information, hardcoded credentials, or confidential data. The application is designed with privacy-first principles and appears to be safe for publication.
 
 ---
 
 ## Audit Scope
 
-### Files Reviewed (8 files)
+### Files Reviewed
 
-- **HTML:** `index.html`
-- **JavaScript:** `api.js`, `app.js`, `session-manager.js`, `prompt-library.js`, `settings.js`
-- **Utilities:** `file-utils.js`, `modal-manager.js`
-- **Libraries:** `js-yaml.min.js`
-- **Documentation:** `README.md`, `PII-Safety-Audit.md`
-- **Assets:** Font files, CSS files (local copies)
+| Category | Files |
+| -------- | ----- |
+| HTML | `index.html`, `landing.html` |
+| JavaScript (Core) | `api.js`, `app.js`, `session-manager.js`, `prompt-library.js`, `settings.js` |
+| JavaScript (Skills) | `skill-preview.js`, `skill-prompts.js` |
+| JavaScript (Utilities) | `file-utils.js`, `modal-manager.js`, `resizable.js` |
+| Libraries | `js-yaml.min.js`, `jszip.min.js` (all local) |
+| Documentation | `README.md`, `PII-Safety-Audit.md` |
+| Assets | Font files, CSS files (local copies) |
 
 ---
 
@@ -50,6 +51,8 @@ This comprehensive audit examined all source code, configuration, and documentat
 - Unsaved keys remain in session memory only
 - Default config uses public localhost endpoints (`http://localhost:1234/v1`)
 
+> [!IMPORTANT] Keys are not excrypted and could be vulnerable to XSS attacks. The user should be aware of other software running on the local machine.
+
 ### 2. Data Storage & Privacy ✅
 
 **Local Storage Only:**
@@ -69,6 +72,7 @@ This comprehensive audit examined all source code, configuration, and documentat
   - `slop_prompt_refine` - Custom refine system prompt
   - `slop_prompt_refine_no_chat` - Custom refine (no chat) system prompt
   - `slop_word_wrap` - UI preference
+  - `slop_optimization_mode` - Skills/Prompts mode toggle (new)
   - `chatHeightPercentage` - UI preference (not namespaced)
 - **IndexedDB Database:**
   - `slop_prompt_library` - Persistent storage for saved prompts (Prompt Library feature)
@@ -78,13 +82,12 @@ This comprehensive audit examined all source code, configuration, and documentat
 
 - Zero external data transmission (except to user-configured LLM endpoint)
 - No analytics, tracking, or telemetry
-- No cookies used
-- All data remains on user's device
+- No cookies
+- Fully offline-capable
 
-### 3. External Network Calls ✅
+### 3. Network Security ✅
 
-**API Endpoints (User-Configured Only):**
-All `fetch()` calls target user-provided endpoints:
+All network calls target **user-configured endpoints only**:
 
 | Method | Endpoint | Purpose | Streaming |
 | ------ | -------- | ------- | --------- |
@@ -95,127 +98,31 @@ All `fetch()` calls target user-provided endpoints:
 | POST | `${baseUrl}/chat/completions` | Refinement | Yes |
 | POST | `${baseUrl}/chat/completions` | Refinement (No Chat) | Yes |
 
-**Network Security:**
-
-- ✅ No hardcoded external URLs
+- ✅ No hardcoded API URLs
 - ✅ Authorization headers only sent when user provides API key
-- ✅ Default endpoint is `localhost` (no internet required)
-- ✅ Users explicitly configure all endpoints via Settings modal
-- ✅ Streaming requests use AbortController for safe cancellation
+- ✅ Default endpoint is `localhost` (no internet required for core features)
+- ✅ Users explicitly configure all LLM endpoints via Settings modal
+- ✅ Streaming requests use `AbortController` for safe cancellation
 
 ### 4. XSS & Injection Protection ✅
 
-**Output Handling:**
+- Output displayed in `<textarea>` using `.value` (inherently XSS-safe)
+- User content escaped via `escapeHtml()` before DOM insertion
+- LLM-generated file names sanitized via `escapeHtml()`
+- YAML parsing size-limited (50KB max) to prevent DoS
+- No use of `eval()`, `Function()`, or `document.write()`
 
-- The optimized result is displayed in a `<textarea>` element using `.value` assignment
-- Textarea value assignment is inherently safe against XSS (content is always treated as text, never parsed as HTML)
-- No markdown rendering or HTML injection possible in the output display
+### 5. Third-Party Dependencies ✅
 
-**Input Sanitization:**
+All libraries are hosted locally (no external CDN dependencies):
+All ibraries were downloaded from the currently stable production versions of their respective websites.
 
-- User-provided HTML in UI lists is escaped via `escapeHtml()` function before insertion
-- YAML parsing size-limited (50,000 char max) to prevent DoS
-
-**Code Review:**
-
-```javascript
-// app.js renderOutput function
-function renderOutput(text) {
-    outputDisplay.value = text;  // ✅ Safe - textarea value assignment
-}
-
-// file-utils.js escapeHtml function
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;  // ✅ Safe text node creation
-    return div.innerHTML;
-}
-```
-
-**Safe Practices:**
-
-- ✅ No use of `eval()` or `Function()` constructors
-- ✅ Output display uses textarea `.value` (inherently safe)
-- ✅ User input escaped via `escapeHtml()` before display in lists
-- ✅ YAML parsing wrapped in try-catch with size limits
-
-### 5. Streaming & Request Handling ✅
-
-**Streaming Implementation Security:**
-
-- All streaming operations use `AbortController` for safe cancellation
-- Server-Sent Events (SSE) parsing handles malformed JSON gracefully
-- Reader resources properly released in `finally` blocks to prevent memory leaks
-
-**Code Review (api.js):**
-
-```javascript
-// Abort mechanism - safe cancellation of in-flight requests
-abort() {
-    if (this.abortController) {
-        this.abortController.abort();
-        this.abortController = null;
-    }
-}
-
-// SSE stream parsing with error handling
-async *parseSSEStream(response) {
-    const reader = response.body.getReader();
-    try {
-        // ... parsing logic with malformed JSON protection
-    } finally {
-        reader.releaseLock();  // ✅ Proper cleanup
-    }
-}
-```
-
-**Throttled Rendering:**
-
-- UI updates throttled to 50ms intervals during streaming
-- Prevents excessive DOM manipulation and improves performance
-- No security implications
-
-**innerHTML Usage Audit:**
-All `innerHTML` assignments in `app.js` were reviewed:
-
-- ✅ `chatHistoryDiv.innerHTML` - Static trusted HTML strings only
-- ✅ `outputDisplay` - Uses `.value` assignment (textarea, not innerHTML)
-- ✅ `sessionsList.innerHTML` - Static HTML or escaped user content via `escapeHtml()`
-- ✅ `libraryPromptList.innerHTML` - Escaped user content via `escapeHtml()`
-- ✅ Button icon updates - Static Font Awesome icons only
-
-### 6. Third-Party Dependencies ✅
-
-**All Libraries Locally Hosted:**
-
-- ✅ **JS-YAML** - YAML parser (local copy in js/lib/)
-- ✅ **Font Awesome** - Icons (local copy in css/)
-- ✅ **Google Fonts** - Typography (local copy in css/)
-
-**No CDN Dependencies:**
-
-- Zero external script loading
-- No runtime CDN calls (fully offline-capable)
-- Eliminates supply-chain and MITM risks
-
-### 7. Configuration Security ✅
-
-**Settings Modal:**
-
-- API endpoint validation via `fetch()` with error handling
-- API keys stored with user consent only
-- Settings persisted to namespaced `localStorage` keys
-- Migration code safely transitions old keys to new namespaced keys
-
-**Migration Safety:**
-
-```javascript
-// api.js lines 9-17 - Safe migration without data loss
-if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
-    localStorage.setItem('slop_api_url', localStorage.getItem('api_url'));
-    localStorage.removeItem('api_url');  // ✅ Cleanup old key
-}
-```
+| Library | Location | Purpose |
+| ------- | -------- | ------- |
+| JS-YAML | `js/lib/js-yaml.min.js` | YAML parsing |
+| JSZip | `js/lib/jszip.min.js` | ZIP export for skills |
+| Font Awesome | `css/` | Icons |
+| Google Fonts | `css/` | Typography |
 
 ---
 
@@ -259,102 +166,22 @@ if (!localStorage.getItem('slop_api_url') && localStorage.getItem('api_url')) {
 
 ---
 
-## Compliance Summary
+## Compliance Summary (Conclusion)
+
+This codebase has been thoroughly reviewed and contains:
 
 | Security Category | Status | Notes |
 | ----------------- | ------ | ----- |
 | PII/Credentials | ✅ Pass | No hardcoded secrets or PII |
-| Data Privacy | ✅ Pass | Local storage only (localStorage + IndexedDB), no tracking |
-| XSS Protection | ✅ Pass | Textarea value assignment + escapeHtml() for lists |
-| Dependency Security | ✅ Pass | All libraries local, no CDN |
+| Data Privacy | ✅ Pass | Local storage only (localStorage + IndexedDB), no tracking or analytics |
+| XSS Protection | ✅ Pass | File names now escaped via `escapeHtml()` |
+| Dependency Security | ✅ Pass | All libraries local, no CDN dependencies |
 | Network Security | ✅ Pass | User-controlled endpoints only |
+| Streaming | ✅ Pass | Secure Streaming with `Abortcontroller` and proper request cancellation and resource cleanup |
 | Documentation | ✅ Pass | Privacy policy and storage clearly documented |
-
----
-
-## Developer & Customer Assurance
-
-### For Developers
-
-✅ **Clean Codebase**
-
-- No sensitive data in source control
-- No `.env` files or configuration secrets
-- Safe to commit to public repositories
-- No cleanup required before publishing
-
-✅ **Security Best Practices**
-
-- Output display uses textarea (inherently XSS-safe)
-- User content escaped via `escapeHtml()` for list displays
-- Local-first architecture
-- Explicit user consent for data persistence
-- Defense-in-depth approach (escapeHtml + size limits)
-
-### For Customers
-
-✅ **Privacy-First Design**
-
-- No data leaves your device (except to your specified LLM)
-- No accounts, sign-ups, or authentication required
-- No telemetry or analytics
-- Fully functional offline (with local LLM)
-
-✅ **Transparent Data Handling**
-
-- All storage clearly documented
-- User controls for API key persistence
-- Easy data deletion via browser settings
-- Open-source for full transparency
-
----
-
-## Recommendations
-
-### Production Readiness: ✅ APPROVED
-
-**Required Actions:** None
-
-### Repository Publishing: ✅ SAFE
-
-**No changes required before making repository public.**
-
-The application architecture ensures:
-
-- No credentials exposure
-- No PII collection
-- Complete user privacy
-- Transparent data practices
-
----
-
-## Audit Conclusion
-
-**Status:** ✅ **APPROVED FOR PUBLIC RELEASE**
-
-This codebase has been thoroughly reviewed and contains:
-
-- ❌ No PII or personal information
-- ❌ No API keys or credentials
-- ❌ No hardcoded secrets
-- ❌ No external tracking or analytics
-- ✅ XSS-safe output handling (textarea value assignment)
-- ✅ Privacy-first architecture
-- ✅ Secure streaming implementation with AbortController
-- ✅ Proper request cancellation and resource cleanup
-- ✅ Clear documentation
+| ----------------- | ------ | ----- |
 
 **Confidence Level:** High
 
 **Audited by:** AI Security Review  
-**Date:** November 29, 2025  
-**Version:** 1.1
-
----
-
-## Audit History
-
-| Version | Date | Changes |
-| ------- | ---- | ------- |
-| 1.0 | November 25, 2025 | Initial audit |
-| 1.1 | November 29, 2025 | Added streaming feature security analysis, AbortController review, innerHTML audit, updated network calls table |
+**Date:** February 7, 2026

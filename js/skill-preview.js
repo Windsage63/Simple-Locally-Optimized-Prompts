@@ -189,7 +189,7 @@ const SkillPreview = {
             
             // Icon based on file type
             const icon = file.name === 'SKILL.md' ? 'fa-file-code' : 'fa-file-alt';
-            tab.innerHTML = `<i class="fa-regular ${icon} file-icon"></i>${file.name}`;
+            tab.innerHTML = `<i class="fa-regular ${icon} file-icon"></i>${escapeHtml(file.name)}`;
             
             tab.addEventListener('click', () => {
                 container.querySelectorAll('.skill-tab').forEach(t => t.classList.remove('active'));
