@@ -22,6 +22,10 @@ The application uses four user-customizable system prompts plus one internal fal
 | `refine_no_chat` | `{{originalPrompt}}`, `{{currentResult}}` | Applies refinements comparing input vs current result only |
 | `chat_fallback` | (none) | Fallback response when original/optimized context is missing |
 
+## Skills Mode
+
+When the UI is in Skills mode, the Optimize/Refine flows use skill-specific system prompts (from `js/skill-prompts.js`) rather than the user-customizable prompt templates. Skill outputs can be single-file or multi-file and are formatted for export into `.github/skills/`.
+
 ## Overview
 
 The `LLMClient` class (`js/api.js`) manages all interactions with the LLM provider. It supports two separate configurations:

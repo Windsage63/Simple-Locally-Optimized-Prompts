@@ -1,795 +1,1041 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SLOP - Simple Locally Optimized Prompts</title>
-    <meta name="description" content="A frontend-only web application to help you craft, discuss, refine, and revise your AI prompts locally and privately.">
-    
+    <meta
+      name="description"
+      content="A frontend-only web application to craft prompts and Claude skills locally, with private optimization and refinement."
+    />
+
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        slop: {
-                            dark: '#0f172a',
-                            panel: 'rgba(30, 41, 59, 0.7)',
-                            primary: '#3b82f6',
-                            accent: '#a855f7',
-                        }
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              slop: {
+                dark: "#0f172a",
+                panel: "rgba(30, 41, 59, 0.7)",
+                primary: "#3b82f6",
+                accent: "#a855f7",
+              },
+            },
+          },
+        },
+      };
     </script>
-    
+
     <style>
-        /* Custom glassmorphism and animations */
-        html {
-            scroll-behavior: smooth;
+      /* Custom glassmorphism and animations */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0f172a 0%,
+          #1e1b4b 50%,
+          #0f172a 100%
+        );
+        min-height: 100vh;
+      }
+
+      /* Animated gradient background */
+      .gradient-bg {
+        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0f172a, #172554);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
         }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-            min-height: 100vh;
+        50% {
+          background-position: 100% 50%;
         }
-        
-        /* Animated gradient background */
-        .gradient-bg {
-            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0f172a, #172554);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+        100% {
+          background-position: 0% 50%;
         }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+      }
+
+      /* Orb decorations */
+      .orb-1 {
+        position: fixed;
+        top: 10%;
+        left: 5%;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(59, 130, 246, 0.15) 0%,
+          transparent 70%
+        );
+        animation: float 8s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .orb-2 {
+        position: fixed;
+        bottom: 10%;
+        right: 5%;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(168, 85, 247, 0.15) 0%,
+          transparent 70%
+        );
+        animation: float 10s ease-in-out infinite reverse;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0) translateX(0);
         }
-        
-        /* Orb decorations */
-        .orb-1 {
-            position: fixed;
-            top: 10%;
-            left: 5%;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-            animation: float 8s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
+        25% {
+          transform: translateY(-20px) translateX(10px);
         }
-        
-        .orb-2 {
-            position: fixed;
-            bottom: 10%;
-            right: 5%;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
-            animation: float 10s ease-in-out infinite reverse;
-            pointer-events: none;
-            z-index: 0;
+        50% {
+          transform: translateY(-10px) translateX(-15px);
         }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); }
-            25% { transform: translateY(-20px) translateX(10px); }
-            50% { transform: translateY(-10px) translateX(-15px); }
-            75% { transform: translateY(-25px) translateX(5px); }
+        75% {
+          transform: translateY(-25px) translateX(5px);
         }
-        
-        /* Glass cards */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .glass-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Feature cards with icons */
-        .feature-icon {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Gradient text */
-        .gradient-text {
-            background: linear-gradient(135deg, #60a5fa, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        /* Button glow effect */
-        .btn-glow {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-glow::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .btn-glow:hover::before {
-            opacity: 1;
-        }
-        
-        .btn-glow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Code blocks */
-        .code-block {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        /* Timeline for workflow */
-        .timeline-dot {
-            position: relative;
-        }
-        
-        .timeline-dot::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 100%;
-            width: 2px;
-            height: 40px;
-            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.5), transparent);
-            transform: translateX(-50%);
-        }
-        
-        .timeline-dot:last-child::before {
-            display: none;
-        }
-        
-        /* Scroll reveal animations */
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.6s ease-out;
-        }
-        
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        /* Hero section wave */
-        .wave-divider {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            overflow: hidden;
-            line-height: 0;
-        }
-        
-        .wave-divider svg {
-            position: relative;
-            display: block;
-            width: calc(100% + 1.3px);
-            height: 80px;
-        }
-        
-        /* Navbar */
-        .nav-link {
-            position: relative;
-            transition: color 0.3s ease;
-        }
-        
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #a855f7);
-            transition: width 0.3s ease;
-        }
-        
-        .nav-link:hover::after {
-            width: 100%;
-        }
-        
-        /* Smooth scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.5);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 0.7);
-        }
-        
-        /* Provider logos */
-        .provider-card {
-            transition: all 0.3s ease;
-        }
-        
-        .provider-card:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Animate on scroll helper */
-        .stagger-1 { transition-delay: 0.1s; }
-        .stagger-2 { transition-delay: 0.2s; }
-        .stagger-3 { transition-delay: 0.3s; }
-        .stagger-4 { transition-delay: 0.4s; }
+      }
+
+      /* Glass cards */
+      .glass-card {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+      }
+
+      .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      /* Feature cards with icons */
+      .feature-icon {
+        background: linear-gradient(
+          135deg,
+          rgba(59, 130, 246, 0.2),
+          rgba(168, 85, 247, 0.2)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* Gradient text */
+      .gradient-text {
+        background: linear-gradient(135deg, #60a5fa, #a855f7);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      /* Button glow effect */
+      .btn-glow {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .btn-glow::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 60%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .btn-glow:hover::before {
+        opacity: 1;
+      }
+
+      .btn-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+      }
+
+      /* Code blocks */
+      .code-block {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Timeline for workflow */
+      .timeline-dot {
+        position: relative;
+      }
+
+      .timeline-dot::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 100%;
+        width: 2px;
+        height: 40px;
+        background: linear-gradient(
+          to bottom,
+          rgba(59, 130, 246, 0.5),
+          transparent
+        );
+        transform: translateX(-50%);
+      }
+
+      .timeline-dot:last-child::before {
+        display: none;
+      }
+
+      /* Scroll reveal animations */
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.6s ease-out;
+      }
+
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Hero section wave */
+      .wave-divider {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+      }
+
+      .wave-divider svg {
+        position: relative;
+        display: block;
+        width: calc(100% + 1.3px);
+        height: 80px;
+      }
+
+      /* Navbar */
+      .nav-link {
+        position: relative;
+        transition: color 0.3s ease;
+      }
+
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #3b82f6, #a855f7);
+        transition: width 0.3s ease;
+      }
+
+      .nav-link:hover::after {
+        width: 100%;
+      }
+
+      /* Smooth scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.5);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(59, 130, 246, 0.7);
+      }
+
+      /* Provider logos */
+      .provider-card {
+        transition: all 0.3s ease;
+      }
+
+      .provider-card:hover {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      /* Animate on scroll helper */
+      .stagger-1 {
+        transition-delay: 0.1s;
+      }
+      .stagger-2 {
+        transition-delay: 0.2s;
+      }
+      .stagger-3 {
+        transition-delay: 0.3s;
+      }
+      .stagger-4 {
+        transition-delay: 0.4s;
+      }
     </style>
-</head>
-<body class="gradient-bg text-white overflow-x-hidden">
+  </head>
+  <body class="gradient-bg text-white overflow-x-hidden">
     <!-- Decorative Orbs -->
     <div class="orb-1"></div>
     <div class="orb-2"></div>
-    
+
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="#" class="flex items-center gap-3 group">
-                <span class="text-3xl">🧲</span>
-                <span class="text-xl font-bold gradient-text">SLOP</span>
-            </a>
-            <div class="hidden md:flex items-center gap-8">
-                <a href="#features" class="nav-link text-slate-300 hover:text-white">Features</a>
-                <a href="#setup" class="nav-link text-slate-300 hover:text-white">Setup</a>
-                <a href="#usage" class="nav-link text-slate-300 hover:text-white">Usage</a>
-                <a href="#privacy" class="nav-link text-slate-300 hover:text-white">Privacy</a>
-                <a href="https://github.com" class="btn-glow bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-lg font-medium">
-                    Get Started
-                </a>
-            </div>
-            <!-- Mobile menu button -->
-            <button id="mobile-menu-btn" class="md:hidden text-2xl">☰</button>
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a href="#" class="flex items-center gap-3 group">
+          <span class="text-3xl">🧲</span>
+          <span class="text-xl font-bold gradient-text">SLOP</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="#features" class="nav-link text-slate-300 hover:text-white"
+            >Features</a
+          >
+          <a href="#setup" class="nav-link text-slate-300 hover:text-white"
+            >Setup</a
+          >
+          <a href="#usage" class="nav-link text-slate-300 hover:text-white"
+            >Usage</a
+          >
+          <a href="#privacy" class="nav-link text-slate-300 hover:text-white"
+            >Privacy</a
+          >
+          <a
+            href="https://github.com"
+            class="btn-glow bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-lg font-medium"
+          >
+            Get Started
+          </a>
         </div>
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-btn" class="md:hidden text-2xl">☰</button>
+      </div>
     </nav>
-    
+
     <!-- Mobile Menu -->
-    <div id="mobile-menu" class="fixed inset-0 z-40 bg-slate-900/95 backdrop-blur-lg hidden flex-col items-center justify-center gap-8 text-xl">
-        <a href="#features" class="text-slate-300 hover:text-white">Features</a>
-        <a href="#setup" class="text-slate-300 hover:text-white">Setup</a>
-        <a href="#usage" class="text-slate-300 hover:text-white">Usage</a>
-        <a href="#privacy" class="text-slate-300 hover:text-white">Privacy</a>
-        <button id="close-menu" class="absolute top-6 right-6 text-3xl">×</button>
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 z-40 bg-slate-900/95 backdrop-blur-lg hidden flex-col items-center justify-center gap-8 text-xl"
+    >
+      <a href="#features" class="text-slate-300 hover:text-white">Features</a>
+      <a href="#setup" class="text-slate-300 hover:text-white">Setup</a>
+      <a href="#usage" class="text-slate-300 hover:text-white">Usage</a>
+      <a href="#privacy" class="text-slate-300 hover:text-white">Privacy</a>
+      <button id="close-menu" class="absolute top-6 right-6 text-3xl">×</button>
     </div>
 
     <!-- Hero Section -->
-    <header class="relative min-h-screen flex items-center justify-center pt-20 pb-32 px-6">
-        <div class="max-w-5xl mx-auto text-center z-10">
-            <div class="reveal">
-                <span class="inline-block px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-6">
-                    ✨ 100% Local &amp; Private
-                </span>
-            </div>
-            
-            <h1 class="reveal stagger-1 text-5xl md:text-7xl font-extrabold leading-tight mb-6">
-                Simple Locally<br>
-                <span class="gradient-text">Optimized Prompts</span>
-            </h1>
-            
-            <p class="reveal stagger-2 text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto mb-10">
-                A frontend-only web application to help you craft, discuss, refine, and revise your AI prompts—all running in your browser.
-            </p>
-            
-            <div class="reveal stagger-3 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#setup" class="btn-glow bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-8 py-4 rounded-xl font-semibold text-lg">
-                    🚀 Get Started
-                </a>
-                <a href="#features" class="btn-glow bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-xl font-semibold text-lg">
-                    Learn More
-                </a>
-            </div>
-            
-            <!-- Hero Screenshot -->
-            <div class="reveal stagger-4 mt-16 relative">
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent z-10 rounded-2xl"></div>
-                <div class="glass-card p-2 overflow-hidden">
-                    <img src="docs/img/screenshot.png" alt="SLOP Application Interface" 
-                         class="rounded-xl w-full shadow-2xl"
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'bg-slate-800 rounded-xl p-20 text-center text-slate-500\'>Application Screenshot</div>'">
-                </div>
-            </div>
+    <header
+      class="relative min-h-screen flex items-center justify-center pt-20 pb-32 px-6"
+    >
+      <div class="max-w-5xl mx-auto text-center z-10">
+        <div class="reveal">
+          <span
+            class="inline-block px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-6"
+          >
+            ✨ 100% Local &amp; Private
+          </span>
         </div>
-        
-        <!-- Wave Divider -->
-        <div class="wave-divider">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" 
-                      fill="rgba(15, 23, 42, 0.5)"></path>
-            </svg>
+
+        <h1
+          class="reveal stagger-1 text-5xl md:text-7xl font-extrabold leading-tight mb-6"
+        >
+          Simple Locally<br />
+          <span class="gradient-text">Optimized Prompts</span>
+        </h1>
+
+        <p
+          class="reveal stagger-2 text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto mb-10"
+        >
+          Craft prompts and Claude skills side by side. Optimize locally, refine
+          with chat, and export clean files without leaving your browser.
+        </p>
+
+        <div
+          class="reveal stagger-3 flex flex-col sm:flex-row gap-4 justify-center"
+        >
+          <a
+            href="#setup"
+            class="btn-glow bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-8 py-4 rounded-xl font-semibold text-lg"
+          >
+            🚀 Get Started
+          </a>
+          <a
+            href="#features"
+            class="btn-glow bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-xl font-semibold text-lg"
+          >
+            Learn More
+          </a>
         </div>
+
+        <!-- Hero Screenshot -->
+        <div class="reveal stagger-4 mt-16 relative">
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent z-10 rounded-2xl"
+          ></div>
+          <div class="glass-card p-2 overflow-hidden">
+            <img
+              src="docs/img/screenshot.png"
+              alt="SLOP Application Interface"
+              class="rounded-xl w-full shadow-2xl"
+              onerror="
+                this.style.display = 'none';
+                this.parentElement.innerHTML =
+                  '<div class=\'bg-slate-800 rounded-xl p-20 text-center text-slate-500\'>Application Screenshot</div>';
+              "
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Wave Divider -->
+      <div class="wave-divider">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path
+            d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+            fill="rgba(15, 23, 42, 0.5)"
+          ></path>
+        </svg>
+      </div>
     </header>
 
     <!-- Features Section -->
     <section id="features" class="py-24 px-6 relative z-10">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
-                    <span class="gradient-text">Powerful Features</span>
-                </h2>
-                <p class="reveal text-xl text-slate-400 max-w-2xl mx-auto">
-                    Everything you need to craft perfect prompts, all running locally in your browser.
-                </p>
-            </div>
-            
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Feature 1: Local & Private -->
-                <div class="reveal glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        🔒
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Local &amp; Private</h3>
-                    <p class="text-slate-400">Runs entirely in your browser. Connect to your local LLM or any OpenAI-compatible API.</p>
-                </div>
-                
-                <!-- Feature 2: Offline Ready -->
-                <div class="reveal stagger-1 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        ⚡
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Secure &amp; Offline-Ready</h3>
-                    <p class="text-slate-400">All assets hosted locally. No external CDN dependencies or tracking.</p>
-                </div>
-                
-                <!-- Feature 3: Customizable -->
-                <div class="reveal stagger-2 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        🎛️
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Customizable Prompts</h3>
-                    <p class="text-slate-400">Tailor AI behavior with editable system prompts for optimization, chat, and refinement.</p>
-                </div>
-                
-                <!-- Feature 4: Dual API -->
-                <div class="reveal glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        🔄
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Dual API Support</h3>
-                    <p class="text-slate-400">Use one model for generation and another for critique. Flexible endpoint configuration.</p>
-                </div>
-                
-                <!-- Feature 5: Real-Time Streaming -->
-                <div class="reveal stagger-1 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        📡
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Real-Time Streaming</h3>
-                    <p class="text-slate-400">See results as they generate with live streaming. Cancel any operation mid-stream.</p>
-                </div>
-                
-                <!-- Feature 6: Smart Optimization -->
-                <div class="reveal stagger-2 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        ✨
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Smart Optimization</h3>
-                    <p class="text-slate-400">Transform freeform ideas into structured, professional prompts with YAML metadata.</p>
-                </div>
-                
-                <!-- Feature 7: Refinement Chat -->
-                <div class="reveal glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        💬
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Refinement Chat</h3>
-                    <p class="text-slate-400">Discuss and plan improvements through an interactive chat before applying changes.</p>
-                </div>
-                
-                <!-- Feature 8: Session Management -->
-                <div class="reveal stagger-1 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        📚
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Session Management</h3>
-                    <p class="text-slate-400">Save and restore multiple prompt engineering sessions. Keep your work organized.</p>
-                </div>
-                
-                <!-- Feature 9: Prompt Library -->
-                <div class="reveal stagger-2 glass-card p-6">
-                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4">
-                        📖
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Prompt Library</h3>
-                    <p class="text-slate-400">Save prompts to IndexedDB. Filter, import, export as Markdown files.</p>
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
+            <span class="gradient-text">Powerful Features</span>
+          </h2>
+          <p class="reveal text-xl text-slate-4400 max-w-2xl mx-auto">
+            Everything you need to craft perfect prompts and skills, running
+            locally in your browser.
+          </p>
         </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Feature 1: Local & Private -->
+          <div class="reveal glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              🔒
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Local &amp; Private</h3>
+            <p class="text-slate-400">
+              Runs entirely in your browser. Connect to your local LLM or any
+              OpenAI-compatible API.
+            </p>
+          </div>
+
+          <!-- Feature 2: Offline Ready -->
+          <div class="reveal stagger-1 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              ⚡
+            </div>
+            <h3 class="text-xl font-semibold mb-2">
+              Secure &amp; Offline-Ready
+            </h3>
+            <p class="text-slate-400">
+              All assets hosted locally. No tracking and no server required.
+            </p>
+          </div>
+
+          <!-- Feature 3: Customizable -->
+          <div class="reveal stagger-2 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              🎛️
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Skills Mode</h3>
+            <p class="text-slate-400">
+              Toggle between prompts and skills to generate structured
+              `SKILL.md` outputs with best practices embedded.
+            </p>
+          </div>
+
+          <!-- Feature 4: Dual API -->
+          <div class="reveal glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              🔄
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Dual API Support</h3>
+            <p class="text-slate-400">
+              Use one model for generation and another for critique. Flexible
+              endpoint configuration.
+            </p>
+          </div>
+
+          <!-- Feature 5: Real-Time Streaming -->
+          <div class="reveal stagger-1 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              📡
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Real-Time Streaming</h3>
+            <p class="text-slate-400">
+              See results as they generate with live streaming. Cancel any
+              operation mid-stream.
+            </p>
+          </div>
+
+          <!-- Feature 6: Smart Optimization -->
+          <div class="reveal stagger-2 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              ✨
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Structured Outputs</h3>
+            <p class="text-slate-400">
+              Transform freeform ideas into YAML-backed prompts or structured
+              skill files.
+            </p>
+          </div>
+
+          <!-- Feature 7: Refinement Chat -->
+          <div class="reveal glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              💬
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Refinement Chat</h3>
+            <p class="text-slate-400">
+              Discuss and plan improvements through an interactive chat before
+              applying changes.
+            </p>
+          </div>
+
+          <!-- Feature 8: Session Management -->
+          <div class="reveal stagger-1 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              📚
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Session Management</h3>
+            <p class="text-slate-400">
+              Save and restore multiple prompt engineering sessions. Keep your
+              work organized.
+            </p>
+          </div>
+
+          <!-- Feature 9: Prompt Library -->
+          <div class="reveal stagger-2 glass-card p-6">
+            <div
+              class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4"
+            >
+              📖
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Prompt Library</h3>
+            <p class="text-slate-400">
+              Save prompts to IndexedDB. Filter, import, export as Markdown
+              files.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Providers Section -->
     <section id="setup" class="py-24 px-6 relative z-10 bg-slate-900/50">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
-                    Works With <span class="gradient-text">Your LLM</span>
-                </h2>
-                <p class="reveal text-xl text-slate-400 max-w-2xl mx-auto">
-                    Connect to any OpenAI-compatible API, local or remote.
-                </p>
-            </div>
-            
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-                <!-- LM Studio -->
-                <div class="reveal provider-card glass-card p-6 text-center">
-                    <div class="text-4xl mb-4">🎬</div>
-                    <h3 class="text-lg font-semibold mb-2">LM Studio</h3>
-                    <code class="code-block px-3 py-1 text-sm text-blue-400">localhost:1234</code>
-                </div>
-                
-                <!-- Ollama -->
-                <div class="reveal stagger-1 provider-card glass-card p-6 text-center">
-                    <div class="text-4xl mb-4">🦙</div>
-                    <h3 class="text-lg font-semibold mb-2">Ollama</h3>
-                    <code class="code-block px-3 py-1 text-sm text-blue-400">localhost:11434</code>
-                </div>
-                
-                <!-- llama.cpp -->
-                <div class="reveal stagger-2 provider-card glass-card p-6 text-center">
-                    <div class="text-4xl mb-4">🐪</div>
-                    <h3 class="text-lg font-semibold mb-2">llama.cpp</h3>
-                    <code class="code-block px-3 py-1 text-sm text-blue-400">localhost:8080</code>
-                </div>
-                
-                <!-- OpenAI -->
-                <div class="reveal stagger-3 provider-card glass-card p-6 text-center">
-                    <div class="text-4xl mb-4">🤖</div>
-                    <h3 class="text-lg font-semibold mb-2">OpenAI API</h3>
-                    <code class="code-block px-3 py-1 text-sm text-blue-400">api.openai.com</code>
-                </div>
-            </div>
-            
-            <!-- Setup Steps -->
-            <div class="mt-20 max-w-4xl mx-auto">
-                <h3 class="reveal text-2xl font-bold text-center mb-12">Quick Setup</h3>
-                
-                <div class="space-y-6">
-                    <div class="reveal glass-card p-6 flex gap-6 items-start">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold">
-                            1
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-semibold mb-2">Open the App</h4>
-                            <p class="text-slate-400">Simply open <code class="code-block px-2 py-1 text-sm">index.html</code> in your browser. No installation needed.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="reveal stagger-1 glass-card p-6 flex gap-6 items-start">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold">
-                            2
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-semibold mb-2">Configure API</h4>
-                            <p class="text-slate-400">Click Settings ⚙️, enter your API endpoint and model name. Optional: configure a separate chat model.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="reveal stagger-2 glass-card p-6 flex gap-6 items-start">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-xl font-bold">
-                            3
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-semibold mb-2">Start Optimizing</h4>
-                            <p class="text-slate-400">Type your idea, click <strong>Optimize</strong>, and watch your prompt transform into a professional structure.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
+            Works With <span class="gradient-text">Your LLM</span>
+          </h2>
+          <p class="reveal text-xl text-slate-400 max-w-2xl mx-auto">
+            Connect to any OpenAI-compatible API, local or remote.
+          </p>
         </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <!-- LM Studio -->
+          <div class="reveal provider-card glass-card p-6 text-center">
+            <div class="text-4xl mb-4">🎬</div>
+            <h3 class="text-lg font-semibold mb-2">LM Studio</h3>
+            <code class="code-block px-3 py-1 text-sm text-blue-400"
+              >localhost:1234</code
+            >
+          </div>
+
+          <!-- Ollama -->
+          <div
+            class="reveal stagger-1 provider-card glass-card p-6 text-center"
+          >
+            <div class="text-4xl mb-4">🦙</div>
+            <h3 class="text-lg font-semibold mb-2">Ollama</h3>
+            <code class="code-block px-3 py-1 text-sm text-blue-400"
+              >localhost:11434</code
+            >
+          </div>
+
+          <!-- llama.cpp -->
+          <div
+            class="reveal stagger-2 provider-card glass-card p-6 text-center"
+          >
+            <div class="text-4xl mb-4">🐪</div>
+            <h3 class="text-lg font-semibold mb-2">llama.cpp</h3>
+            <code class="code-block px-3 py-1 text-sm text-blue-400"
+              >localhost:8080</code
+            >
+          </div>
+
+          <!-- OpenAI -->
+          <div
+            class="reveal stagger-3 provider-card glass-card p-6 text-center"
+          >
+            <div class="text-4xl mb-4">🤖</div>
+            <h3 class="text-lg font-semibold mb-2">OpenAI API</h3>
+            <code class="code-block px-3 py-1 text-sm text-blue-400"
+              >api.openai.com</code
+            >
+          </div>
+        </div>
+
+        <!-- Setup Steps -->
+        <div class="mt-20 max-w-4xl mx-auto">
+          <h3 class="reveal text-2xl font-bold text-center mb-12">
+            Quick Setup
+          </h3>
+
+          <div class="space-y-6">
+            <div class="reveal glass-card p-6 flex gap-6 items-start">
+              <div
+                class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold"
+              >
+                1
+              </div>
+              <div>
+                <h4 class="text-lg font-semibold mb-2">Open the App</h4>
+                <p class="text-slate-400">
+                  Simply open
+                  <code class="code-block px-2 py-1 text-sm">index.html</code>
+                  in your browser. No installation needed.
+                </p>
+              </div>
+            </div>
+
+            <div class="reveal stagger-1 glass-card p-6 flex gap-6 items-start">
+              <div
+                class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold"
+              >
+                2
+              </div>
+              <div>
+                <h4 class="text-lg font-semibold mb-2">Configure API</h4>
+                <p class="text-slate-400">
+                  Click Settings ⚙️, enter your API endpoint and model name.
+                  Optional: configure a separate chat model.
+                </p>
+              </div>
+            </div>
+
+            <div class="reveal stagger-2 glass-card p-6 flex gap-6 items-start">
+              <div
+                class="flex-shrink-0 w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-xl font-bold"
+              >
+                3
+              </div>
+              <div>
+                <h4 class="text-lg font-semibold mb-2">Pick Your Mode</h4>
+                <p class="text-slate-400">
+                  Toggle Prompts or Skills, then click
+                  <strong>Optimize</strong> to generate a structured output.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Usage Workflow -->
     <section id="usage" class="py-24 px-6 relative z-10">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
-                    <span class="gradient-text">How It Works</span>
-                </h2>
-                <p class="reveal text-xl text-slate-400 max-w-2xl mx-auto">
-                    A simple, iterative workflow for crafting perfect prompts.
-                </p>
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="reveal text-4xl md:text-5xl font-bold mb-4">
+            <span class="gradient-text">How It Works</span>
+          </h2>
+          <p class="reveal text-xl text-slate-400 max-w-2xl mx-auto">
+            A simple, iterative workflow for crafting prompts and skills.
+          </p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <!-- Step 1: Optimize -->
+          <div class="reveal glass-card p-8 text-center relative">
+            <div
+              class="absolute -top-4 left-1/2 -translate-x-1/2 bg-bblue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold"
+            >
+              1
             </div>
-            
-            <div class="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <!-- Step 1: Optimize -->
-                <div class="reveal glass-card p-8 text-center relative">
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
-                    <div class="text-5xl mb-6">✨</div>
-                    <h3 class="text-xl font-bold mb-3">Optimize</h3>
-                    <p class="text-slate-400">Enter your raw idea or paste an existing prompt. Click Optimize to generate a structured, professional version.</p>
-                </div>
-                
-                <!-- Step 2: Discuss -->
-                <div class="reveal stagger-1 glass-card p-8 text-center relative">
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
-                    <div class="text-5xl mb-6">💬</div>
-                    <h3 class="text-xl font-bold mb-3">Discuss</h3>
-                    <p class="text-slate-400">Use the Refinement Chat to discuss improvements with the AI. Get context-aware suggestions without changing the prompt.</p>
-                </div>
-                
-                <!-- Step 3: Refine -->
-                <div class="reveal stagger-2 glass-card p-8 text-center relative">
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
-                    <div class="text-5xl mb-6">🔄</div>
-                    <h3 class="text-xl font-bold mb-3">Refine</h3>
-                    <p class="text-slate-400">Click Refine to apply changes. Navigate through version history to compare results and find the best version.</p>
-                </div>
+            <div class="text-5xl mb-6">✨</div>
+            <h3 class="text-xl font-bold mb-3">Optimize</h3>
+            <p class="text-slate-400">
+              Enter your raw idea and generate a structured prompt or skill
+              file.
+            </p>
+          </div>
+
+          <!-- Step 2: Discuss -->
+          <div class="reveal stagger-1 glass-card p-8 text-center relative">
+            <div
+              class="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold"
+            >
+              2
             </div>
-            
-            <!-- YAML Frontmatter Info -->
-            <div class="reveal mt-16 max-w-4xl mx-auto">
-                <div class="glass-card p-8">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-3">
-                        <span class="text-2xl">📝</span> YAML Frontmatter
-                    </h3>
-                    <p class="text-slate-400 mb-4">Every optimized prompt includes structured metadata for organization:</p>
-                    <div class="code-block p-4 text-sm overflow-x-auto">
-                        <pre class="text-slate-300">---
+            <div class="text-5xl mb-6">💬</div>
+            <h3 class="text-xl font-bold mb-3">Discuss</h3>
+            <p class="text-slate-400">
+              Use the Refinement Chat to discuss improvements with the AI. Get
+              context-aware suggestions without changing the prompt.
+            </p>
+          </div>
+
+          <!-- Step 3: Refine -->
+          <div class="reveal stagger-2 glass-card p-8 text-center relative">
+            <div
+              class="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold"
+            >
+              3
+            </div>
+            <div class="text-5xl mb-6">🔄</div>
+            <h3 class="text-xl font-bold mb-3">Refine</h3>
+            <p class="text-slate-400">
+              Click Refine to apply changes. Navigate through version history to
+              compare results and find the best version.
+            </p>
+          </div>
+        </div>
+
+        <!-- YAML Frontmatter Info -->
+        <div class="reveal mt-16 max-w-4xl mx-auto">
+          <div class="glass-card p-8">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-3">
+              <span class="text-2xl">📝</span> YAML Frontmatter
+            </h3>
+            <p class="text-slate-400 mb-4">
+              Every optimized prompt includes structured metadata for
+              organization:
+            </p>
+            <div class="code-block p-4 text-sm overflow-x-auto">
+              <pre class="text-slate-300">
+---
 name: myPromptName
 description: Brief purpose of the prompt
 argument-hint: Expected inputs for the prompt
 ---
 
 # Role
-You are an expert...</pre>
-                    </div>
-                </div>
+You are an expert...</pre
+              >
             </div>
+          </div>
         </div>
+      </div>
     </section>
 
     <!-- Privacy Section -->
     <section id="privacy" class="py-24 px-6 relative z-10 bg-slate-900/50">
-        <div class="max-w-7xl mx-auto">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div class="max-w-7xl mx-auto">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 class="reveal text-4xl md:text-5xl font-bold mb-6">
+              Your Data, <span class="gradient-text">Your Control</span>
+            </h2>
+            <p class="reveal text-xl text-slat44400 mb-8">
+              Everything stays in your browser. No tracking, no cloud
+              storage—just you and your prompts.
+            </p>
+
+            <div class="space-y-4">
+              <div class="reveal flex items-start gap-4">
+                <div
+                  class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400"
+                >
+                  ✓
+                </div>
                 <div>
-                    <h2 class="reveal text-4xl md:text-5xl font-bold mb-6">
-                        Your Data, <span class="gradient-text">Your Control</span>
-                    </h2>
-                    <p class="reveal text-xl text-slate-400 mb-8">
-                        Everything stays in your browser. No tracking, no cloud storage—just you and your prompts.
-                    </p>
-                    
-                    <div class="space-y-4">
-                        <div class="reveal flex items-start gap-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">✓</div>
-                            <div>
-                                <h4 class="font-semibold">LocalStorage for Settings</h4>
-                                <p class="text-slate-400 text-sm">API keys, preferences, and sessions stored locally.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="reveal stagger-1 flex items-start gap-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">✓</div>
-                            <div>
-                                <h4 class="font-semibold">IndexedDB for Library</h4>
-                                <p class="text-slate-400 text-sm">Prompt library persists in your browser's database.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="reveal stagger-2 flex items-start gap-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">✓</div>
-                            <div>
-                                <h4 class="font-semibold">No External Requests</h4>
-                                <p class="text-slate-400 text-sm">Only connects to your configured LLM endpoint.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="reveal stagger-3 flex items-start gap-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">✓</div>
-                            <div>
-                                <h4 class="font-semibold">Easy Data Clearing</h4>
-                                <p class="text-slate-400 text-sm">Clear all data anytime via browser settings.</p>
-                            </div>
-                        </div>
-                    </div>
+                  <h4 class="font-semibold">LocalStorage for Settings</h4>
+                  <p class="text-slate-400 text-sm">
+                    API keys, preferences, and sessions stored locally.
+                  </p>
                 </div>
-                
-                <!-- Privacy Chart -->
-                <div class="reveal">
-                    <div class="glass-card p-6">
-                        <h4 class="text-lg font-semibold mb-4 text-center">Data Storage Breakdown</h4>
-                        <canvas id="privacyChart" class="max-h-64"></canvas>
-                    </div>
+              </div>
+
+              <div class="reveal stagger-1 flex items-start gap-4">
+                <div
+                  class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400"
+                >
+                  ✓
                 </div>
+                <div>
+                  <h4 class="font-semibold">IndexedDB for Library</h4>
+                  <p class="text-slate-400 text-sm">
+                    Prompt library persists in your browser's database.
+                  </p>
+                </div>
+              </div>
+
+              <div class="reveal stagger-2 flex items-start gap-4">
+                <div
+                  class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400"
+                >
+                  ✓
+                </div>
+                <div>
+                  <h4 class="font-semibold">No External Requests</h4>
+                  <p class="text-slate-400 text-sm">
+                    Only connects to your configured LLM endpoint.
+                  </p>
+                </div>
+              </div>
+
+              <div class="reveal stagger-3 flex items-start gap-4">
+                <div
+                  class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400"
+                >
+                  ✓
+                </div>
+                <div>
+                  <h4 class="font-semibold">Easy Data Clearing</h4>
+                  <p class="text-slate-400 text-sm">
+                    Clear all data anytime via browser settings.
+                  </p>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Privacy Chart -->
+          <div class="reveal">
+            <div class="glass-card p-6">
+              <h4 class="text-lg font-semibold mb-4 text-center">
+                Data Storage Breakdown
+              </h4>
+              <canvas id="privacyChart" class="max-h-64"></canvas>
+            </div>
+          </div>
         </div>
+      </div>
     </section>
 
     <!-- CTA Section -->
     <section class="py-24 px-6 relative z-10">
-        <div class="max-w-4xl mx-auto text-center">
-            <div class="reveal glass-card p-12">
-                <h2 class="text-4xl font-bold mb-4">Ready to Craft Perfect Prompts?</h2>
-                <p class="text-xl text-slate-400 mb-8">
-                    Start optimizing your AI interactions today—completely free and private.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="index.html" class="btn-glow bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-8 py-4 rounded-xl font-semibold text-lg">
-                        🚀 Launch SLOP
-                    </a>
-                    <a href="https://github.com" class="btn-glow bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-xl font-semibold text-lg">
-                        ⭐ Star on GitHub
-                    </a>
-                </div>
-            </div>
+      <div class="max-w-4xl mx-auto text-center">
+        <div class="reveal glass-card p-12">
+          <h2 class="text-4xl font-bold mb-">
+            Ready to Craft Perfect Prompts?
+          </h2>
+          <p class="text-xl text-slate-400 mb-8">
+            Start optimizing your AI interactions today—completely free and
+            private.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="index.html"
+              class="btn-glow bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-8 py-4 rounded-xl font-semibold text-lg"
+            >
+              🚀 Launch SLOP
+            </a>
+            <a
+              href="https://github.com"
+              class="btn-glow bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-xl font-semibold text-lg"
+            >
+              ⭐ Star on GitHub
+            </a>
+          </div>
         </div>
+      </div>
     </section>
 
     <!-- Footer -->
     <footer class="py-12 px-6 border-t border-white/5 relative z-10">
-        <div class="max-w-7xl mx-auto text-center">
-            <div class="flex items-center justify-center gap-3 mb-4">
-                <span class="text-2xl">🧲</span>
-                <span class="text-lg font-semibold gradient-text">Simple Locally Optimized Prompts</span>
-            </div>
-            <p class="text-slate-500 text-sm">
-                MIT License • Made with ❤️ for the AI community
-            </p>
+      <div class="max-w-7xl mx-auto text-center">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <span class="text-2xl">🧲</span>
+          <span class="text-lg font-semibold gradient-text"
+            >Simple Locally Optimized Prompts</span
+          >
         </div>
+        <p class="text-slate-500 text-sm">
+          MIT License • Made with ❤️ for the AI community
+        </p>
+      </div>
     </footer>
 
     <!-- JavaScript -->
     <script>
-        // Mobile menu toggle
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const closeMenuBtn = document.getElementById('close-menu');
-        
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.remove('hidden');
-            mobileMenu.classList.add('flex');
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+      const closeMenuBtn = document.getElementById("close-menu");
+
+      mobileMenuBtn.addEventListener("click", () => {
+        mobileMenu.classList.remove("hidden");
+        mobileMenu.classList.add("flex");
+      });
+
+      closeMenuBtn.addEventListener("click", () => {
+        mobileMenu.classList.add("hidden");
+        mobileMenu.classList.remove("flex");
+      });
+
+      // Close mobile menu when clicking links
+      mobileMenu.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          mobileMenu.classList.add("hidden");
+          mobileMenu.classList.remove("flex");
         });
-        
-        closeMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.add('hidden');
-            mobileMenu.classList.remove('flex');
+      });
+
+      // Scroll reveal animation
+      const revealElements = document.querySelectorAll(".reveal");
+
+      const revealOnScroll = () => {
+        const windowHeight = window.innerHeight;
+        revealElements.forEach((el) => {
+          const elementTop = el.getBoundingClientRect().top;
+          const revealPoint = 150;
+
+          if (elementTop < windowHeight - revealPoint) {
+            el.classList.add("active");
+          }
         });
-        
-        // Close mobile menu when clicking links
-        mobileMenu.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                mobileMenu.classList.add('hidden');
-                mobileMenu.classList.remove('flex');
-            });
-        });
-        
-        // Scroll reveal animation
-        const revealElements = document.querySelectorAll('.reveal');
-        
-        const revealOnScroll = () => {
-            const windowHeight = window.innerHeight;
-            revealElements.forEach(el => {
-                const elementTop = el.getBoundingClientRect().top;
-                const revealPoint = 150;
-                
-                if (elementTop < windowHeight - revealPoint) {
-                    el.classList.add('active');
-                }
-            });
-        };
-        
-        window.addEventListener('scroll', revealOnScroll);
-        window.addEventListener('load', revealOnScroll);
-        
-        // Privacy Chart
-        const ctx = document.getElementById('privacyChart');
-        if (ctx) {
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['LocalStorage (Settings)', 'IndexedDB (Library)', 'Session Memory', 'External (Your LLM)'],
-                    datasets: [{
-                        data: [35, 40, 15, 10],
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(168, 85, 247, 0.8)',
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(251, 191, 36, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(168, 85, 247, 1)',
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(251, 191, 36, 1)'
-                        ],
-                        borderWidth: 2
-                    }]
+      };
+
+      window.addEventListener("scroll", revealOnScroll);
+      window.addEventListener("load", revealOnScroll);
+
+      // Privacy Chart
+      const ctx = document.getElementById("privacyChart");
+      if (ctx) {
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: [
+              "LocalStorage (Settings)",
+              "IndexedDB (Library)",
+              "Session Memory",
+              "External (Your LLM)",
+            ],
+            datasets: [
+              {
+                data: [35, 40, 15, 10],
+                backgroundColor: [
+                  "rgba(59, 130, 246, 0.8)",
+                  "rgba(168, 85, 247, 0.8)",
+                  "rgba(34, 197, 94, 0.8)",
+                  "rgba(251, 191, 36, 0.8)",
+                ],
+                borderColor: [
+                  "rgba(59, 130, 246, 1)",
+                  "rgba(168, 85, 247, 1)",
+                  "rgba(34, 197, 94, 1)",
+                  "rgba(251, 191, 36, 1)",
+                ],
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: "#94a3b8",
+                  padding: 15,
+                  font: {
+                    family: "Inter",
+                  },
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#94a3b8',
-                                padding: 15,
-                                font: {
-                                    family: 'Inter'
-                                }
-                            }
-                        }
-                    },
-                    cutout: '60%'
-                }
+              },
+            },
+            cutout: "60%",
+          },
+        });
+      }
+
+      // Smooth scroll for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
             });
+          }
+        });
+      });
+
+      // Navbar background on scroll
+      const nav = document.querySelector("nav");
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 50) {
+          nav.style.background = "rgba(15, 23, 42, 0.9)";
+          nav.style.backdropFilter = "blur(12px)";
+        } else {
+          nav.style.background = "transparent";
+          nav.style.backdropFilter = "none";
         }
-        
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-        
-        // Navbar background on scroll
-        const nav = document.querySelector('nav');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                nav.style.background = 'rgba(15, 23, 42, 0.9)';
-                nav.style.backdropFilter = 'blur(12px)';
-            } else {
-                nav.style.background = 'transparent';
-                nav.style.backdropFilter = 'none';
-            }
-        });
+      });
     </script>
-</body>
+  </body>
 </html>

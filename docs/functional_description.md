@@ -9,6 +9,7 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 ### 1. Header
 
 - **Logo/Title**: Displays the application name.
+- **Mode Toggle**: Switch between **Prompts** and **Skills** mode to optimize either prompt ideas or skill specifications.
 - **History Button** (`clock-rotate-left` icon): Opens the **History Modal** to view and manage past sessions.
 - **Settings Button** (`gear` icon): Opens the **Settings Modal** to configure API connections and models.
 
@@ -36,7 +37,12 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 - **Save to Library Button** (`bookmark` icon): Saves the current optimized prompt to the local Prompt Library (IndexedDB). If a prompt with the same name exists, you can choose to overwrite or create a new version.
 - **Library Button** (`book` icon): Opens the **Library Modal** to browse, filter, and manage saved prompts.
 - **Save Prompt Button** (`download` icon): Downloads the current optimized prompt as a Markdown file (`.md`). The filename is derived from the prompt's name in the YAML frontmatter.
+- **Skill Export Behavior**: When Skills mode is enabled and the output matches skill format, the Save button downloads a ZIP containing `SKILL.md` and optional `references/` files in the expected skill folder layout.
 - **Copy Button** (`copy` icon): Copies the content of the Optimized Result to the clipboard.
+
+### 5. Skills Mode
+
+When Skills mode is active, Optimize/Refine use skill-specific system prompts that embed Claude skill best practices. Outputs are expected to be valid skill files (single `SKILL.md` or multi-file format with markers) and can be exported as ZIP bundles for easy use in `.github/skills/`.
 
 ### 4. Modals
 
@@ -77,5 +83,6 @@ SLOP is a web-based application designed to help users create, optimize, and ref
 ## Data Persistence
 
 - **Local Storage**: The application saves the current session state (input, chat, results), API settings, and custom system prompts in the browser's Local Storage. All keys are namespaced with a `slop_` prefix (e.g., `slop_api_url`, `slop_sessions`) to avoid collisions with other applications.
+- **Mode Preference**: The current optimization mode is stored in Local Storage as `slop_optimization_mode`.
 - **IndexedDB**: The Prompt Library uses IndexedDB (`slop_prompt_library` database) to persistently store saved prompts with metadata including name, description, and content.
 - **Privacy**: No data is sent to a server other than the configured LLM API.

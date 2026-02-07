@@ -11,9 +11,11 @@
 - **Local & Private**: Runs entirely in your browser and connects to your local LLM (LM Studio, Ollama, etc.) or an OpenAI-compatible external API.
 - **Secure & Offline-Ready**: All libraries (JS-YAML) and assets (Fonts, Icons) are hosted locally. No external CDN dependencies.
 - **Customizable System Prompts**: Tailor the AI's behavior by editing the underlying system prompts for optimization, chat, refinement (with chat), and refinement (without chat). This allows the system to be used for many similar workflows where discussion and incremental revision are beneficial.
+- **Skills Mode**: Toggle between Prompts and Skills mode to generate structured Claude skills, including `SKILL.md` and optional `references/` files, with outputs formatted for easy export.
 - **Dual API Support**: Configure separate API endpoints and models for Optimize/Refine operations versus the Chat Assistant. Use one powerful model for prompt generation and refinement, while a different model critiques and analyzes the output. The Chat Assistant falls back to the primary API settings if left unconfigured.
 - **Real-Time Streaming**: See results as they generate with live streaming output. Cancel any operation mid-stream with the Stop button.
 - **Smart Optimization**: Turns freeform ideas into structured, professional prompts with YAML frontmatter metadata.
+- **Skill Packaging**: When in Skills mode, Save downloads a ZIP bundle that matches the expected skill folder layout.
 - **YAML Frontmatter**: Generated prompts include structured metadata (name, description, argument-hint) useful for organizing prompts in systems like VS Code or Obsidian.
 - **Refinement Chat**: Discuss and plan improvements to your optimized prompt through an interactive chat interface. The chat provides context-aware suggestions to help you evaluate and iterate on your prompt without making direct changes until you click "Refine".
 - **Flexible Refinement**: Use the "Include Chat" toggle to refine prompts with or without chat context. Refine based on updated input text alone, or incorporate the full chat discussion.
@@ -68,6 +70,7 @@ You need an LLM API connection or a local LLM server running that is compatible 
 3. **Optimize a Prompt**:
     - Type your idea in the main input box (e.g., "Write a prompt to create a python script for a snake game").
     - Or, paste an existing prompt into the main input box.
+    - Use the **Mode** toggle in the header to switch between **Prompts** and **Skills** before optimizing.
     - Click **Optimize**.
     - The structured result will appear in the right panel.
 4. **Refine with Chat**:
@@ -100,6 +103,7 @@ All stored information (API settings, chat history, and optimization results) is
 - **API Keys**: You have full control over API key storage. Choose to save it persistently or keep it in session memory only. Both the Optimize/Refine API and Chat Assistant API have independent key storage options.
 - **Key Storage**: Keys saved persistently are stored client-side in localStorage. Keys stored in localStorage are not encrypted and are accessible to scripts running in the same browser origin. Keys saved in session memory are stored only for the current browser session (in memory or sessionStorage) and are cleared when the page is reloaded or the tab is closed.
 - **Stored Data**: Settings are stored with namespaced keys for Optimize/Refine; for Chat Assistant; plus session data and UI preferences.
+- **Mode Preference**: The Prompts/Skills mode is stored locally as `slop_optimization_mode`.
 - **No Tracking**: No information is ever sent to external servers except your configured LLM endpoint(s).
 
 ## 🔧 Troubleshooting
