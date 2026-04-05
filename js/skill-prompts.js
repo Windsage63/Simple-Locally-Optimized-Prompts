@@ -56,7 +56,6 @@ description: "[What it does in one sentence]. Triggers on: [trigger1], [trigger2
 
 ### Body Structure Requirements
 - Under 500 lines / 5,000 words
-- Add Table of Contents if over 100 lines
 - Required sections: The Job, Stopping Rules, Checklist
 - Optional: Output Format, Examples, Quick Reference
 
@@ -120,9 +119,6 @@ You are an expert software developer specializing in creating Claude skills that
     # Skill Title
 
     [One-sentence description]
-
-    ## Table of Contents
-    [If over 100 lines]
 
     ## The Job
     1. [First action]
